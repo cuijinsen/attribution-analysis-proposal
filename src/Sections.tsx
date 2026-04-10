@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import {
   Typography, Table, Card, Row, Col, Tag, Alert, Timeline,
   Space, Descriptions, Steps,
@@ -928,10 +928,10 @@ export const TargetPlanSection: React.FC = () => (
    ============================================================ */
 const milestoneFlow = `
 flowchart LR
-  M0["M0 · MVP\n4~6 周"]
-  M1["M1 · 增强\n4~6 周"]
-  M2["M2 · 完整\n6~8 周"]
-  M3["M3 · 平台化\n按需"]
+  M0["M0 · 4月底\nAgent MVP"]
+  M1["M1 · 5~6月\n增强归因"]
+  M2["M2 · 7~8月\n完整闭环"]
+  M3["M3 · 按需\n平台化"]
 
   M0 --> M1 --> M2 --> M3
 
@@ -941,150 +941,212 @@ flowchart LR
   style M3 fill:#f3e8ff,stroke:#9333ea
 `
 
+const existingCapFlow = `
+flowchart TB
+  subgraph JAVA["Java 后端 已有"]
+    AS["AlertDetectionService\n4种规则 邮件+站内推送"]
+    LS["LlmService\nOpenAI/Azure/Claude\n同步+SSE流式"]
+    AD["AnomalyDetectionService\nZ-Score 滑动均值"]
+    SS["SupervisionService\n督办 订阅 审计"]
+  end
+
+  subgraph FE["前端 已有"]
+    AT["attribution.ts\nBFS贡献度 关键路径"]
+    AE["alertEngine.ts\n规则评估 阈值/目标/衍生"]
+    CS["canvasStore\n画布状态 协作 面板"]
+  end
+
+  subgraph NEW["新增 Agent 层"]
+    AG["Agno Agent\nPython FastAPI"]
+    JA["Java Agent Proxy\nHTTP 桥接"]
+  end
+
+  AG -->|HTTP 调用| AS
+  AG -->|HTTP 调用| LS
+  AG -->|HTTP 调用| AD
+  JA -->|反向代理| AG
+  FE -->|请求| JA
+
+  style JAVA fill:#eaf2ff,stroke:#2563eb
+  style FE fill:#ecfdf3,stroke:#16a34a
+  style NEW fill:#fff7ed,stroke:#ea580c
+`
+
+const agnoArchFlow = `
+flowchart LR
+  U["用户 前端对话框"] -->|SSE| JP["Java Plugin\nAgent Proxy"]
+  JP -->|HTTP| AGNO["Agno Agent\nFastAPI :8100"]
+
+  subgraph TOOLS["Agent 工具集 调用 Java 已有 API"]
+    T1["attribution_tool\n调用归因计算"]
+    T2["alert_tool\n查询预警事件"]
+    T3["anomaly_tool\n异常检测"]
+    T4["data_tool\n取指标数据"]
+    T5["breakdown_tool\n维度拆解"]
+  end
+
+  AGNO --> TOOLS
+  TOOLS -->|HTTP 回调| JP2["Java API\n/indicator/tree/*"]
+
+  style U fill:#ecfdf3,stroke:#16a34a
+  style JP fill:#eaf2ff,stroke:#2563eb
+  style AGNO fill:#fff7ed,stroke:#ea580c
+  style TOOLS fill:#fdf4ff,stroke:#a21caf
+  style JP2 fill:#eaf2ff,stroke:#2563eb
+`
+
 interface MilestoneItem {
   milestone: string
   time: string
   color: string
   tagColor: string
   summary: string
-  attribution: { scope: string; detail: string }[]
+  reuse: { scope: string; detail: string }[]
+  newBuild: { scope: string; detail: string }[]
+  agent: { scope: string; detail: string }[]
   push: { scope: string; detail: string }[]
-  alert: { scope: string; detail: string }[]
-  target: { scope: string; detail: string }[]
-  llm: string
   deliverables: string[]
   exitCriteria: string
 }
 
 const milestones: MilestoneItem[] = [
   {
-    milestone: 'M0 · MVP',
-    time: '4~6 周',
+    milestone: 'M0 · Agent MVP',
+    time: '4月底（~3 周）',
     color: '#16a34a',
     tagColor: 'green',
-    summary: '最小闭环验证：用最简单的归因 + 邮件推送跑通核心链路，证明产品价值。',
-    attribution: [
-      { scope: '结构归因', detail: '仅对父子节点做 delta 贡献度计算（值变化量 × 权重），不做多层递归展开' },
-      { scope: '维度归因', detail: '暂不实现——不回答"哪个地区/渠道导致下降"，仅展示拆解树上的关键路径' },
-      { scope: '多期归因', detail: '暂不实现——不做同比/环比自动归因，用户手工选择对比期' },
-      { scope: '异常检测', detail: '仅用阈值（绝对值越限）触发，无 3-sigma / IQR / 趋势检测' },
-      { scope: '置信度', detail: '不输出置信度指标，仅输出贡献度百分比与排序' },
+    summary: '基于 Agno (Python) 搭建归因 Agent，复用全部已有 Java 服务作为工具，跑通"对话式归因 + 邮件推送"端到端链路。同时在 Java 侧保留 Agent Proxy 为后续纯 Java Agent 验证做准备。',
+    reuse: [
+      { scope: 'AlertDetectionService', detail: '4 种规则检测 + 事件 CRUD + 去重 + 定时扫描 → 预警能力直接复用，零改造' },
+      { scope: 'AlertNotificationService', detail: '邮件 (SMTP) + 站内推送 → 推送通道直接复用，Agent 触发即可' },
+      { scope: 'LlmService', detail: 'OpenAI/Azure/Claude 同步 + SSE → Agent 通过 HTTP 调用获取 LLM 解读' },
+      { scope: 'AnomalyDetectionService', detail: 'Z-Score + 滑动均值 → Agent 异常检测工具直接复用' },
+      { scope: 'attribution.ts', detail: 'BFS 全树贡献度 + 关键路径 → 前端归因结果作为 Agent 输入上下文' },
+      { scope: 'alertEngine.ts', detail: '前端规则评估 → 阈值/目标达成率/衍生指标三种 subject → 零改造' },
+      { scope: '督办/订阅/评论/审计', detail: 'SupervisionService + SubscriptionService + CommentService + AuditLogService → 全部作为 Agent 可调用工具' },
+    ],
+    newBuild: [
+      { scope: 'Agno Agent 服务', detail: 'Python FastAPI 服务 (port 8100)；定义 AttributionAgent，注册 5~7 个工具函数，每个工具通过 HTTP 回调 Java API' },
+      { scope: 'Java Agent Proxy', detail: '新建 AgentProxyController，SSE 转发前端请求到 Agno，透传 session/auth；为后续替换为纯 Java Agent 留接口' },
+      { scope: '归因工具简化', detail: 'attribution_tool: 接收节点 ID → 调用前端传来的归因结果（或调用 Java calc API 重算）→ 返回 Top-N 贡献路径' },
+      { scope: '对话前端组件', detail: '拆解树工具栏增加对话入口，连接 AgentProxy SSE，展示多轮对话 + 引用跳转' },
+      { scope: 'Agent 邮件推送', detail: 'Agent 在归因结论生成后，调用 AlertNotificationService 已有邮件通道发送归因摘要' },
+    ],
+    agent: [
+      { scope: 'Agno Agent', detail: 'Python 侧：agno.Agent + agno.Tool 注册 → 工具调用 Java API → LLM 编排 → 流式输出' },
+      { scope: 'Java Proxy', detail: 'AgentProxyController /indicator/tree/agent/chat (SSE)，转发到 http://localhost:8100/v1/runs' },
+      { scope: '工具集 M0', detail: 'attribution_tool（归因）、alert_query_tool（查预警）、anomaly_tool（异常检测）、data_query_tool（取数）、notify_tool（推送邮件）' },
+      { scope: '双栈验证', detail: '同一组测试用例，分别跑 Agno 和 Java SimpleAgent → 对比延迟/准确率/编排质量/运维成本 → M1 确定主力栈' },
     ],
     push: [
-      { scope: '推送渠道', detail: '仅邮件（SMTP），不接 IM / Webhook / 站内信' },
-      { scope: '模板', detail: '固定 HTML 邮件模板：包含指标名 + 当前值/目标值 + Top 3 贡献路径 + 查看详情链接' },
-      { scope: '接收人', detail: '每条预警规则静态配置邮件列表，不做组织架构对接' },
-      { scope: '频率', detail: '触发即发，无聚合/静默窗口' },
+      { scope: '渠道', detail: '复用已有 EmailCenter.getDispatcher().send()，邮件模板包含归因摘要 + 证据 + 查看链接' },
+      { scope: '触发方式', detail: 'Agent 归因完成后 → 自动调用 notify_tool → 邮件发送（无需用户手动）' },
     ],
-    alert: [
-      { scope: '规则类型', detail: '仅支持"绝对值越限"：指标值 > 上界 或 < 下界' },
-      { scope: '调度', detail: 'Cron 定时扫描（日/小时粒度），非实时流' },
-      { scope: '状态', detail: '只有 触发 / 已恢复 两种状态，无升级/静默/认领' },
-    ],
-    target: [
-      { scope: '范围', detail: '暂不落地目标机制；仅在拆解树卡片上支持手工录入目标值并展示偏差' },
-    ],
-    llm: '不接入 LLM；归因结果以结构化数据 + 固定话术呈现。',
     deliverables: [
-      'DeltaDecomposer（父子 delta 贡献度）',
-      '预警规则 CRUD + Cron 扫描',
-      'SMTP 邮件推送',
-      '前端：归因按钮 → 瀑布图 + 路径高亮 + 证据卡片',
-      'API: POST /alert/rule, GET /alert/events',
+      'Agno Agent 服务 (Python FastAPI + 5 个 Tool)',
+      'Java AgentProxyController (SSE 转发)',
+      'Java SimpleAgent (轻量对比验证)',
+      '前端对话组件 (SSE + 多轮)',
+      '归因 → 邮件推送自动闭环',
+      '双栈 (Agno vs Java) 评估报告',
     ],
-    exitCriteria: '端到端验证：配置预警规则 → 触发 → 归因计算 → 邮件到达，全链路 < 60s。',
+    exitCriteria: '对话追问"为什么GMV下降了?" → Agent 调用归因+异常检测 → 输出根因 → 邮件推送到收件人，端到端 < 30s。Java SimpleAgent 完成同场景对比。',
   },
   {
-    milestone: 'M1 · 增强归因 + 多通道推送',
-    time: '4~6 周',
+    milestone: 'M1 · 增强归因 + 维度分析',
+    time: '5~6 月（4~6 周）',
     color: '#2563eb',
     tagColor: 'blue',
-    summary: '补齐维度归因，推送扩展到站内信 + 企业 IM，引入 LLM 做自然语言解读。',
-    attribution: [
-      { scope: '维度归因', detail: '新增 DimensionalAttributor：按维度字段拆分贡献度，回答"哪个地区导致了下降"' },
-      { scope: '多层递归', detail: '结构归因从单层扩展到 BFS 全路径展开' },
-      { scope: '异常检测', detail: '增加 3-sigma 与 IQR 规则，支持波动率预警' },
+    summary: '根据 M0 双栈评估确定主力 Agent 栈；新增维度归因工具 + 多通道推送 + LLM 解读嵌入推送。',
+    reuse: [
+      { scope: '前端维度拆解', detail: '已有 14 种 FilterConverter + BreakdownService → Agent 维度拆解工具直接调用' },
+      { scope: '订阅服务', detail: 'SubscriptionService (daily/realtime/alert_only) → Agent 按订阅模式定向推送' },
+    ],
+    newBuild: [
+      { scope: 'DimensionalAttributor', detail: 'Java 新增：按维度字段拆分变化量，回答"哪个地区导致了下降"' },
+      { scope: 'breakdown_tool', detail: 'Agent 新工具：调用 DimensionalAttributor → 返回维度贡献度排名' },
+      { scope: 'IM Webhook', detail: '企业微信/飞书/钉钉 Webhook 推送适配器' },
+      { scope: 'LLM 摘要嵌入', detail: 'Agent 归因结论 → LLM 生成摘要 → 自动嵌入邮件/IM 卡片' },
+    ],
+    agent: [
+      { scope: '主力栈确定', detail: '根据 M0 评估报告决定：沿用 Agno OR 迁移到纯 Java Agent' },
+      { scope: '新工具', detail: '+breakdown_tool（维度归因）、+comparison_tool（同比/环比）、+trend_tool（趋势分析）' },
+      { scope: '记忆', detail: 'Agent 接入会话记忆（Agno SqliteDb 或 Java 侧 session store），支持多轮上下文' },
     ],
     push: [
-      { scope: '渠道', detail: '邮件 + 站内消息 + 企业微信 / 飞书 / 钉钉（Webhook 方式）' },
-      { scope: '模板', detail: '结构化卡片模板，含维度归因结果与直方图缩略图' },
-      { scope: '静默窗口', detail: '支持夜间 / 休息日降噪策略' },
+      { scope: '渠道', detail: '邮件 + 站内 + 企业 IM (Webhook)' },
+      { scope: '策略', detail: '静默窗口（夜间/休息日降噪）、聚合推送（同一指标多条预警合并）' },
     ],
-    alert: [
-      { scope: '规则类型', detail: '绝对值 + 同比 + 环比三种' },
-      { scope: '状态', detail: '触发 → 认领 → 处理中 → 已关闭，4 阶段流转' },
-    ],
-    target: [
-      { scope: '范围', detail: '目标偏差检测上线：录入周期目标，偏差超限自动归因并推送' },
-    ],
-    llm: 'LLM 接入：归因结果 → LLM 生成自然语言摘要，嵌入邮件/IM 卡片。',
     deliverables: [
-      'DimensionalAttributor + BFS 全路径展开',
+      'DimensionalAttributor 维度归因模块',
+      'Agent 新工具 3 个 (breakdown/comparison/trend)',
       'IM Webhook 推送适配器',
-      '站内消息中心集成',
-      'LLM 解释层（SSE 流式）',
-      '目标偏差检测 + 推送',
+      'Agent 记忆 + 多轮上下文',
+      'LLM 摘要自动嵌入推送消息',
     ],
-    exitCriteria: '维度归因准确率 > 80%（人工评估），推送到达率 > 99%，LLM 延迟 < 5s。',
+    exitCriteria: '维度归因准确率 > 80%；推送到达率 > 99%；Agent 3 轮对话内定位维度根因。',
   },
   {
-    milestone: 'M2 · 完整归因 + 对话追问',
-    time: '6~8 周',
+    milestone: 'M2 · 完整闭环 + 目标管理',
+    time: '7~8 月（6~8 周）',
     color: '#ea580c',
     tagColor: 'orange',
-    summary: '多期归因上线，Agent 驱动对话式追问，预警/目标闭环完善。',
-    attribution: [
-      { scope: '多期归因', detail: '同比/环比自动归因，结合日历效应校正' },
-      { scope: '异常根因', detail: '异常检测与归因融合：检测 → 定位 → 解释 一体化' },
-      { scope: '置信度', detail: '输出置信度 / 证据强度分数' },
+    summary: '完整预警/目标闭环：多期归因、分级升级推送、目标偏差自动归因、Agent 知识库增强。',
+    reuse: [
+      { scope: '全部已有', detail: 'M0 + M1 所有服务和 Agent 工具持续复用' },
+    ],
+    newBuild: [
+      { scope: '多期归因', detail: '同比/环比自动归因 + 日历效应校正' },
+      { scope: '目标管理域', detail: '独立目标配置 + 偏差检测 + 责任矩阵 + 纠偏触发' },
+      { scope: '推送升级', detail: '分级升级：30min 未响应 → 逐级升级 → 群通知' },
+      { scope: '审计看板', detail: '预警/目标/归因全链路审计 + 复盘看板' },
+    ],
+    agent: [
+      { scope: '知识库', detail: 'Agent 接入 RAG：历史归因报告 + 业务知识库 → 提升归因解释准确性' },
+      { scope: '置信度', detail: 'Agent 输出每条归因的置信度分数 + 证据引用' },
+      { scope: '自动化', detail: 'Agent 定时巡检：主动发现异常 → 生成归因报告 → 推送 → 无人值守' },
     ],
     push: [
-      { scope: '渠道', detail: '追加自定义 Webhook + 短信网关' },
-      { scope: '策略', detail: '分级升级策略：30min 未响应 → 升级到上级 → 再未响应 → 群通知' },
+      { scope: '渠道', detail: '全通道：邮件 + 站内 + IM + 短信 + 自定义 Webhook' },
+      { scope: '策略', detail: '分级升级 + 回执追踪 + 超时自动关闭' },
     ],
-    alert: [
-      { scope: '规则', detail: '完整四种规则：阈值/趋势/异常/对比' },
-      { scope: '闭环', detail: '回写处置、复盘记录、审计日志' },
-    ],
-    target: [
-      { scope: '完整', detail: '独立目标管理域：多层目标分解、责任矩阵、纠偏建议自动推送' },
-    ],
-    llm: 'AttributionAgent + 5~7 个工具：对话式追问「为什么降了？」→ 多轮归因/拆解/筛选。',
     deliverables: [
       '多期归因引擎',
-      'AttributionAgent 对话框架',
-      '分级升级推送策略',
-      '独立目标管理域',
-      '审计日志 + 复盘看板',
+      '目标管理域 (配置/检测/责任矩阵)',
+      '分级推送升级策略',
+      'Agent RAG 知识库',
+      '审计 + 复盘看板',
     ],
-    exitCriteria: 'Agent 3 轮对话内定位根因概率 > 70%；预警 → 推送 → 处置闭环率 > 90%。',
+    exitCriteria: '预警 → 推送 → 处置闭环率 > 90%；目标偏差检测覆盖率 100%；Agent 巡检周报自动生成。',
   },
   {
     milestone: 'M3 · 平台化',
     time: '按需',
     color: '#9333ea',
     tagColor: 'purple',
-    summary: '归因能力跨产品共享，统一预警中心，Agent 中心化。',
-    attribution: [
-      { scope: '引擎', detail: '归因引擎独立为平台服务，多业务线复用' },
+    summary: '归因引擎 + Agent + 推送中心抽离为平台能力，跨业务线复用。',
+    reuse: [
+      { scope: '全部', detail: 'M0~M2 所有服务、工具、Agent 作为平台化基础' },
+    ],
+    newBuild: [
+      { scope: '归因 SDK', detail: '归因引擎独立为 API 服务，支持任意指标体系接入' },
+      { scope: '统一推送中心', detail: '所有应用共享消息路由 + 渠道 + 模板管理' },
+      { scope: '统一预警中心', detail: '跨产品规则编排 + 事件聚合' },
+    ],
+    agent: [
+      { scope: 'Agent Hub', detail: '多 Agent 注册中心，按领域分工：归因 Agent / 预警 Agent / 报告 Agent' },
+      { scope: 'Agent Marketplace', detail: '工具集市场化：第三方可注册工具供 Agent 调用' },
     ],
     push: [
-      { scope: '中心化', detail: '统一推送中心：所有应用共享消息路由与渠道管理' },
+      { scope: '平台', detail: '统一推送中心：集中管理所有渠道、模板、配额' },
     ],
-    alert: [
-      { scope: '平台', detail: '独立预警中心微服务，支持跨产品规则编排' },
-    ],
-    target: [
-      { scope: '平台', detail: '目标管理上升为平台能力，打通 OKR / KPI 体系' },
-    ],
-    llm: 'Agent 中心化部署，按能力注册工具集。',
     deliverables: [
       '归因 Engine SDK / API',
       '统一预警中心',
       '统一推送中心',
-      'Agent Hub',
+      'Agent Hub + Marketplace',
     ],
-    exitCriteria: '≥ 2 个业务线接入归因引擎；推送中心日均消息量 > 10k。',
+    exitCriteria: '>= 2 个业务线接入；推送中心日均 > 10k 消息。',
   },
 ]
 
@@ -1092,33 +1154,133 @@ export const MilestoneSection: React.FC = () => (
   <section id="sec-milestone" className="section-block">
     <Title level={2} className="section-title">十四、里程碑规划与评估</Title>
 
-    <Title level={3} className="section-subtitle">14.1 整体节奏</Title>
+    {/* 已有能力盘点 */}
+    <Title level={3} className="section-subtitle">14.1 现有能力盘点（已实现，可直接复用）</Title>
+    <Alert
+      type="success"
+      showIcon
+      style={{ marginBottom: 16 }}
+      message="当前插件已有完整的预警检测、邮件推送、LLM 对接、异常检测、协作等服务，Agent 层只需编排调用，无需重写底层能力。"
+    />
+    <MermaidChart chart={existingCapFlow} />
+    <Table
+      pagination={false}
+      size="middle"
+      bordered
+      style={{ marginTop: 16 }}
+      columns={[
+        { title: '已有服务', dataIndex: 'service', width: 200 },
+        { title: '能力', dataIndex: 'capability' },
+        { title: 'Agent 复用方式', dataIndex: 'reuseAs' },
+      ]}
+      dataSource={[
+        { key: '1', service: 'AlertDetectionService', capability: '4 种规则(阈值/目标偏离/波动/连续异常) + 事件CRUD + 去重 + 1分钟定时扫描', reuseAs: 'alert_query_tool / alert_detect_tool' },
+        { key: '2', service: 'AlertNotificationService', capability: '邮件(SMTP) + 站内推送 + 规则级通知配置 + 接收人管理', reuseAs: 'notify_tool' },
+        { key: '3', service: 'LlmService', capability: 'OpenAI/Azure/Claude 同步+SSE，支持7种 provider', reuseAs: 'Agno Agent 的 LLM backend / LLM 解读工具' },
+        { key: '4', service: 'AnomalyDetectionService', capability: 'Z-Score + 滑动均值 + 自动模式，纯 Java 无依赖', reuseAs: 'anomaly_tool' },
+        { key: '5', service: 'attribution.ts (前端)', capability: 'BFS 全树贡献度 + 关键路径 + 根因定位 + 贡献度等级', reuseAs: 'Agent 输入上下文 / attribution_tool' },
+        { key: '6', service: 'alertEngine.ts (前端)', capability: '3种判断对象(值/达成率/衍生) + 可配规则 + 自动扫描', reuseAs: '前端预警联动' },
+        { key: '7', service: 'ModelDataQueryService', capability: '指标取数 + 筛选 + 维度拆解 + 14种 FilterConverter', reuseAs: 'data_query_tool / breakdown_tool' },
+        { key: '8', service: '协作服务群', capability: '督办 + 订阅(每日/实时/仅预警) + 评论 + 审计日志', reuseAs: 'supervision_tool / comment_tool' },
+      ]}
+    />
+
+    {/* Agno 双栈架构 */}
+    <Title level={3} className="section-subtitle">14.2 M0 双栈架构：Agno (Python) + Java Agent Proxy</Title>
+    <MermaidChart chart={agnoArchFlow} />
+    <Row gutter={[14, 14]} style={{ marginTop: 16 }}>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><ExperimentOutlined /> 为什么用 Agno</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>Python 生态 Agent 框架成熟，Agno 20 行即可启动</li>
+            <li>内置 FastAPI 运行时，原生 SSE 流式 + 会话隔离</li>
+            <li>Tool 注册极简：@tool 装饰器 HTTP 调用 Java API</li>
+            <li>内置 SqliteDb 会话存储 + tracing 审计</li>
+            <li>团队协作（Team）和工作流（Workflow）一步到位</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><SafetyOutlined /> Java Proxy 的价值</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>前端不直连 Python，统一 Java 入口保持架构一致</li>
+            <li>Proxy 层做权限校验 + 请求审计 + 限流</li>
+            <li>后续可平滑替换为纯 Java Agent 而前端无感</li>
+            <li>M0 同时在 Proxy 内实现简单 SimpleAgent 做对比</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><ThunderboltOutlined /> 双栈验证策略</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>同一组测试用例，分别跑 Agno 和 Java SimpleAgent</li>
+            <li>对比维度：响应延迟、工具调用准确率、编排质量、运维成本</li>
+            <li>M0 结束出评估报告，M1 确定主力栈</li>
+            <li>无论哪条路线胜出，Java API 工具集不变</li>
+          </ul>
+        </Card>
+      </Col>
+    </Row>
+
+    {/* 整体节奏 */}
+    <Title level={3} className="section-subtitle">14.3 整体节奏</Title>
     <MermaidChart chart={milestoneFlow} />
 
     {milestones.map((m, idx) => (
       <div key={idx} style={{ marginBottom: 32 }}>
         <Title level={3} className="section-subtitle" style={{ borderLeft: `4px solid ${m.color}`, paddingLeft: 12 }}>
-          14.{idx + 2} {m.milestone}
+          14.{idx + 4} {m.milestone}
           <Tag color={m.tagColor} style={{ marginLeft: 10, fontSize: 12, verticalAlign: 'middle' }}>{m.time}</Tag>
         </Title>
 
         <Alert type="info" showIcon icon={<ScheduleOutlined />} style={{ marginBottom: 16 }} message={m.summary} />
 
-        {/* 归因引擎范围 */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><BranchesOutlined /> 归因引擎范围</>}>
+        {/* 复用已有服务 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><CheckCircleOutlined /> 复用已有服务</>}>
           <Table
             pagination={false}
             size="small"
             bordered
             columns={[
-              { title: '能力项', dataIndex: 'scope', width: 120 },
-              { title: '本阶段范围', dataIndex: 'detail' },
+              { title: '服务', dataIndex: 'scope', width: 180 },
+              { title: '复用说明', dataIndex: 'detail' },
             ]}
-            dataSource={m.attribution.map((a, i) => ({ key: `a${i}`, ...a }))}
+            dataSource={m.reuse.map((a, i) => ({ key: `r${i}`, ...a }))}
           />
         </Card>
 
-        {/* 推送能力 */}
+        {/* 新建内容 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><RocketOutlined /> 新建内容</>}>
+          <Table
+            pagination={false}
+            size="small"
+            bordered
+            columns={[
+              { title: '模块', dataIndex: 'scope', width: 180 },
+              { title: '实现说明', dataIndex: 'detail' },
+            ]}
+            dataSource={m.newBuild.map((a, i) => ({ key: `n${i}`, ...a }))}
+          />
+        </Card>
+
+        {/* Agent */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><ApiOutlined /> Agent 层</>}>
+          <Table
+            pagination={false}
+            size="small"
+            bordered
+            columns={[
+              { title: '能力项', dataIndex: 'scope', width: 180 },
+              { title: '说明', dataIndex: 'detail' },
+            ]}
+            dataSource={m.agent.map((a, i) => ({ key: `ag${i}`, ...a }))}
+          />
+        </Card>
+
+        {/* 推送 */}
         <Card size="small" style={{ marginBottom: 12 }} title={<><MailOutlined /> 推送能力</>}>
           <Table
             pagination={false}
@@ -1126,47 +1288,10 @@ export const MilestoneSection: React.FC = () => (
             bordered
             columns={[
               { title: '能力项', dataIndex: 'scope', width: 120 },
-              { title: '本阶段范围', dataIndex: 'detail' },
+              { title: '说明', dataIndex: 'detail' },
             ]}
             dataSource={m.push.map((a, i) => ({ key: `p${i}`, ...a }))}
           />
-        </Card>
-
-        {/* 预警 + 目标 */}
-        <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
-          <Col xs={24} md={12}>
-            <Card size="small" title={<><BellOutlined /> 预警机制</>} style={{ height: '100%' }}>
-              <Table
-                pagination={false}
-                size="small"
-                bordered
-                columns={[
-                  { title: '能力项', dataIndex: 'scope', width: 100 },
-                  { title: '范围', dataIndex: 'detail' },
-                ]}
-                dataSource={m.alert.map((a, i) => ({ key: `al${i}`, ...a }))}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} md={12}>
-            <Card size="small" title={<><FlagOutlined /> 目标机制</>} style={{ height: '100%' }}>
-              <Table
-                pagination={false}
-                size="small"
-                bordered
-                columns={[
-                  { title: '能力项', dataIndex: 'scope', width: 100 },
-                  { title: '范围', dataIndex: 'detail' },
-                ]}
-                dataSource={m.target.map((a, i) => ({ key: `t${i}`, ...a }))}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* LLM */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><ApiOutlined /> LLM / Agent</>}>
-          <Paragraph style={{ margin: 0, color: 'rgba(51,65,85,0.88)' }}>{m.llm}</Paragraph>
         </Card>
 
         {/* 交付物 & 退出标准 */}
@@ -1187,27 +1312,33 @@ export const MilestoneSection: React.FC = () => (
       </div>
     ))}
 
-    {/* MVP 简化策略总结 */}
-    <Title level={3} className="section-subtitle">14.6 MVP 简化策略一览</Title>
+    {/* M0 简化策略 */}
+    <Title level={3} className="section-subtitle">14.8 M0 归因引擎简化说明</Title>
+    <Alert
+      type="info"
+      showIcon
+      style={{ marginBottom: 16 }}
+      message="M0 不是从零造归因引擎，而是让 Agent 编排已有服务。归因能力本身已经在插件中运行，Agent 的价值是让用户用自然语言驱动这些能力。"
+    />
     <Table
       pagination={false}
       size="middle"
       bordered
       columns={[
-        { title: '维度', dataIndex: 'dimension', width: 120 },
-        { title: 'MVP 做什么', dataIndex: 'mvpDo' },
-        { title: 'MVP 不做什么', dataIndex: 'mvpNot' },
+        { title: '维度', dataIndex: 'dimension', width: 140 },
+        { title: 'M0 范围', dataIndex: 'mvpDo' },
+        { title: '简化依据', dataIndex: 'reason' },
         { title: '何时补齐', dataIndex: 'when', width: 80 },
       ]}
       dataSource={[
-        { key: '1', dimension: '归因算法', mvpDo: '父子节点 delta 贡献度（单层）', mvpNot: '维度归因、多期对比归因、多层递归展开', when: 'M1' },
-        { key: '2', dimension: '异常检测', mvpDo: '绝对值阈值越限', mvpNot: '3-sigma、IQR、趋势检测、波动率', when: 'M1~M2' },
-        { key: '3', dimension: '置信度', mvpDo: '仅输出贡献度排序', mvpNot: '置信度分数、证据强度评分', when: 'M2' },
-        { key: '4', dimension: '推送渠道', mvpDo: '邮件（SMTP）', mvpNot: '站内信、IM Webhook、短信', when: 'M1' },
-        { key: '5', dimension: '推送策略', mvpDo: '触发即发、固定模板', mvpNot: '静默窗口、聚合降噪、分级升级', when: 'M1~M2' },
-        { key: '6', dimension: '预警规则', mvpDo: '绝对值上/下界', mvpNot: '同比、环比、趋势规则', when: 'M1' },
-        { key: '7', dimension: '目标机制', mvpDo: '卡片手工录入目标值展示偏差', mvpNot: '自动偏差检测、责任矩阵、纠偏推送', when: 'M1~M2' },
-        { key: '8', dimension: 'LLM', mvpDo: '不接入，固定话术', mvpNot: '自然语言解读、对话追问、Agent', when: 'M1~M2' },
+        { key: '1', dimension: '归因算法', mvpDo: '复用现有 BFS 贡献度 + 关键路径，Agent 包装为 attribution_tool', reason: '已有 attribution.ts 全套实现，无需新写算法', when: '\u2014' },
+        { key: '2', dimension: '维度归因', mvpDo: 'M0 不做；Agent 仅展示拆解树关键路径', reason: '需新增 DimensionalAttributor，工作量偏大', when: 'M1' },
+        { key: '3', dimension: '异常检测', mvpDo: '复用 AnomalyDetectionService (Z-Score + 滑动均值)', reason: '已有 3 种算法（含自动模式），零改造', when: '\u2014' },
+        { key: '4', dimension: '预警检测', mvpDo: '复用 AlertDetectionService 全部 4 种规则', reason: '阈值/目标偏离/波动/连续异常全部已实现', when: '\u2014' },
+        { key: '5', dimension: '推送', mvpDo: '复用 AlertNotificationService 邮件通道', reason: '已有 SMTP + 规则级接收人配置', when: 'M1 加 IM' },
+        { key: '6', dimension: 'LLM 解读', mvpDo: '复用 LlmService，Agent 在归因后自动调 LLM 生成摘要', reason: '已有同步 + SSE，支持 7 种 provider', when: '\u2014' },
+        { key: '7', dimension: 'Agent 编排', mvpDo: 'Agno Agent + 5 个 Tool；Java SimpleAgent 对比验证', reason: 'Agno 20 行搭建，Tool 是 HTTP 调用已有 API', when: 'M1 定栈' },
+        { key: '8', dimension: '对话 UI', mvpDo: '拆解树工具栏增加对话入口，SSE 流式展示', reason: '复用已有 requestSSE 基础设施', when: 'M1 增强' },
       ]}
     />
 
@@ -1215,7 +1346,7 @@ export const MilestoneSection: React.FC = () => (
       type="warning"
       showIcon
       style={{ marginTop: 22 }}
-      message="MVP 核心原则：用最短链路（阈值预警 → 单层归因 → 邮件推送）验证 ”发现异常、解释原因、通知到人” 的端到端价值，4~6 周交付。"
+      message="M0 核心原则：Agent 从第一天就上线，不做技术储备。已有服务是 Agent 的手脚，Agent 只需学会什么时候用哪只手。4月底交付，端到端验证用自然语言驱动归因分析 + 邮件推送的产品价值。"
     />
   </section>
 )
