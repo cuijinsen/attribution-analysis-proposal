@@ -10,7 +10,7 @@ import {
   BackgroundSection, ProductSection, ArchitectureSection,
   EngineSection, LLMSection, JDK8Section, TechSelectionSection,
   PlansSection, SummarySection, MVPSection, ConclusionSection,
-  AlertPlanSection, TargetPlanSection,
+  AlertPlanSection, TargetPlanSection, MilestoneSection,
 } from './Sections'
 import './App.css'
 
@@ -32,6 +32,7 @@ const sectionOrder = [
   'sec-conclusion',
   'sec-alert-plan',
   'sec-target-plan',
+  'sec-milestone',
   'sec-comments',
 ]
 
@@ -64,6 +65,7 @@ const menuItems: MenuProps['items'] = [
     children: [
       { key: 'sec-alert-plan', label: <a href="#sec-alert-plan">十二、预警机制评估</a> },
       { key: 'sec-target-plan', label: <a href="#sec-target-plan">十三、目标机制评估</a> },
+      { key: 'sec-milestone', label: <a href="#sec-milestone">十四、里程碑规划</a> },
     ],
   },
   {
@@ -184,6 +186,7 @@ const App: React.FC = () => {
             <ConclusionSection />
             <AlertPlanSection />
             <TargetPlanSection />
+            <MilestoneSection />
 
             {/* Comments */}
             <section id="sec-comments" className="section-block">

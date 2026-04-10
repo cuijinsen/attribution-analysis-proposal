@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import {
   Typography, Table, Card, Row, Col, Tag, Alert, Timeline,
   Space, Descriptions, Steps,
@@ -9,6 +9,7 @@ import {
   BranchesOutlined, AimOutlined, FundOutlined,
   RocketOutlined, GithubOutlined, LinkOutlined,
   BellOutlined, FlagOutlined, SendOutlined,
+  ScheduleOutlined, MailOutlined, TrophyOutlined,
 } from '@ant-design/icons'
 import MermaidChart from './components/MermaidChart'
 
@@ -918,6 +919,303 @@ export const TargetPlanSection: React.FC = () => (
       showIcon
       style={{ marginTop: 22 }}
       message="建议采用 C 方案：目标偏差触发后自动归因、自动推送责任人和客户接收对象，实现目标管理闭环。"
+    />
+  </section>
+)
+
+/* ============================================================
+   十四、里程碑规划与评估
+   ============================================================ */
+const milestoneFlow = `
+flowchart LR
+  M0["M0 · MVP\n4~6 周"]
+  M1["M1 · 增强\n4~6 周"]
+  M2["M2 · 完整\n6~8 周"]
+  M3["M3 · 平台化\n按需"]
+
+  M0 --> M1 --> M2 --> M3
+
+  style M0 fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+  style M1 fill:#eaf2ff,stroke:#2563eb
+  style M2 fill:#fff7ed,stroke:#ea580c
+  style M3 fill:#f3e8ff,stroke:#9333ea
+`
+
+interface MilestoneItem {
+  milestone: string
+  time: string
+  color: string
+  tagColor: string
+  summary: string
+  attribution: { scope: string; detail: string }[]
+  push: { scope: string; detail: string }[]
+  alert: { scope: string; detail: string }[]
+  target: { scope: string; detail: string }[]
+  llm: string
+  deliverables: string[]
+  exitCriteria: string
+}
+
+const milestones: MilestoneItem[] = [
+  {
+    milestone: 'M0 · MVP',
+    time: '4~6 周',
+    color: '#16a34a',
+    tagColor: 'green',
+    summary: '最小闭环验证：用最简单的归因 + 邮件推送跑通核心链路，证明产品价值。',
+    attribution: [
+      { scope: '结构归因', detail: '仅对父子节点做 delta 贡献度计算（值变化量 × 权重），不做多层递归展开' },
+      { scope: '维度归因', detail: '暂不实现——不回答"哪个地区/渠道导致下降"，仅展示拆解树上的关键路径' },
+      { scope: '多期归因', detail: '暂不实现——不做同比/环比自动归因，用户手工选择对比期' },
+      { scope: '异常检测', detail: '仅用阈值（绝对值越限）触发，无 3-sigma / IQR / 趋势检测' },
+      { scope: '置信度', detail: '不输出置信度指标，仅输出贡献度百分比与排序' },
+    ],
+    push: [
+      { scope: '推送渠道', detail: '仅邮件（SMTP），不接 IM / Webhook / 站内信' },
+      { scope: '模板', detail: '固定 HTML 邮件模板：包含指标名 + 当前值/目标值 + Top 3 贡献路径 + 查看详情链接' },
+      { scope: '接收人', detail: '每条预警规则静态配置邮件列表，不做组织架构对接' },
+      { scope: '频率', detail: '触发即发，无聚合/静默窗口' },
+    ],
+    alert: [
+      { scope: '规则类型', detail: '仅支持"绝对值越限"：指标值 > 上界 或 < 下界' },
+      { scope: '调度', detail: 'Cron 定时扫描（日/小时粒度），非实时流' },
+      { scope: '状态', detail: '只有 触发 / 已恢复 两种状态，无升级/静默/认领' },
+    ],
+    target: [
+      { scope: '范围', detail: '暂不落地目标机制；仅在拆解树卡片上支持手工录入目标值并展示偏差' },
+    ],
+    llm: '不接入 LLM；归因结果以结构化数据 + 固定话术呈现。',
+    deliverables: [
+      'DeltaDecomposer（父子 delta 贡献度）',
+      '预警规则 CRUD + Cron 扫描',
+      'SMTP 邮件推送',
+      '前端：归因按钮 → 瀑布图 + 路径高亮 + 证据卡片',
+      'API: POST /alert/rule, GET /alert/events',
+    ],
+    exitCriteria: '端到端验证：配置预警规则 → 触发 → 归因计算 → 邮件到达，全链路 < 60s。',
+  },
+  {
+    milestone: 'M1 · 增强归因 + 多通道推送',
+    time: '4~6 周',
+    color: '#2563eb',
+    tagColor: 'blue',
+    summary: '补齐维度归因，推送扩展到站内信 + 企业 IM，引入 LLM 做自然语言解读。',
+    attribution: [
+      { scope: '维度归因', detail: '新增 DimensionalAttributor：按维度字段拆分贡献度，回答"哪个地区导致了下降"' },
+      { scope: '多层递归', detail: '结构归因从单层扩展到 BFS 全路径展开' },
+      { scope: '异常检测', detail: '增加 3-sigma 与 IQR 规则，支持波动率预警' },
+    ],
+    push: [
+      { scope: '渠道', detail: '邮件 + 站内消息 + 企业微信 / 飞书 / 钉钉（Webhook 方式）' },
+      { scope: '模板', detail: '结构化卡片模板，含维度归因结果与直方图缩略图' },
+      { scope: '静默窗口', detail: '支持夜间 / 休息日降噪策略' },
+    ],
+    alert: [
+      { scope: '规则类型', detail: '绝对值 + 同比 + 环比三种' },
+      { scope: '状态', detail: '触发 → 认领 → 处理中 → 已关闭，4 阶段流转' },
+    ],
+    target: [
+      { scope: '范围', detail: '目标偏差检测上线：录入周期目标，偏差超限自动归因并推送' },
+    ],
+    llm: 'LLM 接入：归因结果 → LLM 生成自然语言摘要，嵌入邮件/IM 卡片。',
+    deliverables: [
+      'DimensionalAttributor + BFS 全路径展开',
+      'IM Webhook 推送适配器',
+      '站内消息中心集成',
+      'LLM 解释层（SSE 流式）',
+      '目标偏差检测 + 推送',
+    ],
+    exitCriteria: '维度归因准确率 > 80%（人工评估），推送到达率 > 99%，LLM 延迟 < 5s。',
+  },
+  {
+    milestone: 'M2 · 完整归因 + 对话追问',
+    time: '6~8 周',
+    color: '#ea580c',
+    tagColor: 'orange',
+    summary: '多期归因上线，Agent 驱动对话式追问，预警/目标闭环完善。',
+    attribution: [
+      { scope: '多期归因', detail: '同比/环比自动归因，结合日历效应校正' },
+      { scope: '异常根因', detail: '异常检测与归因融合：检测 → 定位 → 解释 一体化' },
+      { scope: '置信度', detail: '输出置信度 / 证据强度分数' },
+    ],
+    push: [
+      { scope: '渠道', detail: '追加自定义 Webhook + 短信网关' },
+      { scope: '策略', detail: '分级升级策略：30min 未响应 → 升级到上级 → 再未响应 → 群通知' },
+    ],
+    alert: [
+      { scope: '规则', detail: '完整四种规则：阈值/趋势/异常/对比' },
+      { scope: '闭环', detail: '回写处置、复盘记录、审计日志' },
+    ],
+    target: [
+      { scope: '完整', detail: '独立目标管理域：多层目标分解、责任矩阵、纠偏建议自动推送' },
+    ],
+    llm: 'AttributionAgent + 5~7 个工具：对话式追问「为什么降了？」→ 多轮归因/拆解/筛选。',
+    deliverables: [
+      '多期归因引擎',
+      'AttributionAgent 对话框架',
+      '分级升级推送策略',
+      '独立目标管理域',
+      '审计日志 + 复盘看板',
+    ],
+    exitCriteria: 'Agent 3 轮对话内定位根因概率 > 70%；预警 → 推送 → 处置闭环率 > 90%。',
+  },
+  {
+    milestone: 'M3 · 平台化',
+    time: '按需',
+    color: '#9333ea',
+    tagColor: 'purple',
+    summary: '归因能力跨产品共享，统一预警中心，Agent 中心化。',
+    attribution: [
+      { scope: '引擎', detail: '归因引擎独立为平台服务，多业务线复用' },
+    ],
+    push: [
+      { scope: '中心化', detail: '统一推送中心：所有应用共享消息路由与渠道管理' },
+    ],
+    alert: [
+      { scope: '平台', detail: '独立预警中心微服务，支持跨产品规则编排' },
+    ],
+    target: [
+      { scope: '平台', detail: '目标管理上升为平台能力，打通 OKR / KPI 体系' },
+    ],
+    llm: 'Agent 中心化部署，按能力注册工具集。',
+    deliverables: [
+      '归因 Engine SDK / API',
+      '统一预警中心',
+      '统一推送中心',
+      'Agent Hub',
+    ],
+    exitCriteria: '≥ 2 个业务线接入归因引擎；推送中心日均消息量 > 10k。',
+  },
+]
+
+export const MilestoneSection: React.FC = () => (
+  <section id="sec-milestone" className="section-block">
+    <Title level={2} className="section-title">十四、里程碑规划与评估</Title>
+
+    <Title level={3} className="section-subtitle">14.1 整体节奏</Title>
+    <MermaidChart chart={milestoneFlow} />
+
+    {milestones.map((m, idx) => (
+      <div key={idx} style={{ marginBottom: 32 }}>
+        <Title level={3} className="section-subtitle" style={{ borderLeft: `4px solid ${m.color}`, paddingLeft: 12 }}>
+          14.{idx + 2} {m.milestone}
+          <Tag color={m.tagColor} style={{ marginLeft: 10, fontSize: 12, verticalAlign: 'middle' }}>{m.time}</Tag>
+        </Title>
+
+        <Alert type="info" showIcon icon={<ScheduleOutlined />} style={{ marginBottom: 16 }} message={m.summary} />
+
+        {/* 归因引擎范围 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><BranchesOutlined /> 归因引擎范围</>}>
+          <Table
+            pagination={false}
+            size="small"
+            bordered
+            columns={[
+              { title: '能力项', dataIndex: 'scope', width: 120 },
+              { title: '本阶段范围', dataIndex: 'detail' },
+            ]}
+            dataSource={m.attribution.map((a, i) => ({ key: `a${i}`, ...a }))}
+          />
+        </Card>
+
+        {/* 推送能力 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><MailOutlined /> 推送能力</>}>
+          <Table
+            pagination={false}
+            size="small"
+            bordered
+            columns={[
+              { title: '能力项', dataIndex: 'scope', width: 120 },
+              { title: '本阶段范围', dataIndex: 'detail' },
+            ]}
+            dataSource={m.push.map((a, i) => ({ key: `p${i}`, ...a }))}
+          />
+        </Card>
+
+        {/* 预警 + 目标 */}
+        <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
+          <Col xs={24} md={12}>
+            <Card size="small" title={<><BellOutlined /> 预警机制</>} style={{ height: '100%' }}>
+              <Table
+                pagination={false}
+                size="small"
+                bordered
+                columns={[
+                  { title: '能力项', dataIndex: 'scope', width: 100 },
+                  { title: '范围', dataIndex: 'detail' },
+                ]}
+                dataSource={m.alert.map((a, i) => ({ key: `al${i}`, ...a }))}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card size="small" title={<><FlagOutlined /> 目标机制</>} style={{ height: '100%' }}>
+              <Table
+                pagination={false}
+                size="small"
+                bordered
+                columns={[
+                  { title: '能力项', dataIndex: 'scope', width: 100 },
+                  { title: '范围', dataIndex: 'detail' },
+                ]}
+                dataSource={m.target.map((a, i) => ({ key: `t${i}`, ...a }))}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* LLM */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><ApiOutlined /> LLM / Agent</>}>
+          <Paragraph style={{ margin: 0, color: 'rgba(51,65,85,0.88)' }}>{m.llm}</Paragraph>
+        </Card>
+
+        {/* 交付物 & 退出标准 */}
+        <Row gutter={[12, 12]}>
+          <Col xs={24} md={14}>
+            <Card size="small" title={<><RocketOutlined /> 交付物</>} style={{ height: '100%' }}>
+              <ul style={{ paddingLeft: 18, margin: 0, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
+                {m.deliverables.map((d, i) => <li key={i} style={{ marginBottom: 4 }}>{d}</li>)}
+              </ul>
+            </Card>
+          </Col>
+          <Col xs={24} md={10}>
+            <Card size="small" title={<><TrophyOutlined /> 退出标准</>} style={{ height: '100%' }}>
+              <Paragraph style={{ margin: 0, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>{m.exitCriteria}</Paragraph>
+            </Card>
+          </Col>
+        </Row>
+      </div>
+    ))}
+
+    {/* MVP 简化策略总结 */}
+    <Title level={3} className="section-subtitle">14.6 MVP 简化策略一览</Title>
+    <Table
+      pagination={false}
+      size="middle"
+      bordered
+      columns={[
+        { title: '维度', dataIndex: 'dimension', width: 120 },
+        { title: 'MVP 做什么', dataIndex: 'mvpDo' },
+        { title: 'MVP 不做什么', dataIndex: 'mvpNot' },
+        { title: '何时补齐', dataIndex: 'when', width: 80 },
+      ]}
+      dataSource={[
+        { key: '1', dimension: '归因算法', mvpDo: '父子节点 delta 贡献度（单层）', mvpNot: '维度归因、多期对比归因、多层递归展开', when: 'M1' },
+        { key: '2', dimension: '异常检测', mvpDo: '绝对值阈值越限', mvpNot: '3-sigma、IQR、趋势检测、波动率', when: 'M1~M2' },
+        { key: '3', dimension: '置信度', mvpDo: '仅输出贡献度排序', mvpNot: '置信度分数、证据强度评分', when: 'M2' },
+        { key: '4', dimension: '推送渠道', mvpDo: '邮件（SMTP）', mvpNot: '站内信、IM Webhook、短信', when: 'M1' },
+        { key: '5', dimension: '推送策略', mvpDo: '触发即发、固定模板', mvpNot: '静默窗口、聚合降噪、分级升级', when: 'M1~M2' },
+        { key: '6', dimension: '预警规则', mvpDo: '绝对值上/下界', mvpNot: '同比、环比、趋势规则', when: 'M1' },
+        { key: '7', dimension: '目标机制', mvpDo: '卡片手工录入目标值展示偏差', mvpNot: '自动偏差检测、责任矩阵、纠偏推送', when: 'M1~M2' },
+        { key: '8', dimension: 'LLM', mvpDo: '不接入，固定话术', mvpNot: '自然语言解读、对话追问、Agent', when: 'M1~M2' },
+      ]}
+    />
+
+    <Alert
+      type="warning"
+      showIcon
+      style={{ marginTop: 22 }}
+      message="MVP 核心原则：用最短链路（阈值预警 → 单层归因 → 邮件推送）验证 ”发现异常、解释原因、通知到人” 的端到端价值，4~6 周交付。"
     />
   </section>
 )
