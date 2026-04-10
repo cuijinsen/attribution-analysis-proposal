@@ -46,23 +46,26 @@ const App: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.darkAlgorithm,
+        algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#6366f1',
+          colorPrimary: '#3b5bfd',
           borderRadius: 12,
-          colorBgBase: '#0b0d14',
-          colorBgContainer: '#111827',
-          colorBgElevated: '#1a1f2e',
-          colorLink: '#818cf8',
+          colorBgBase: '#f8fafc',
+          colorBgContainer: '#ffffff',
+          colorBgElevated: '#ffffff',
+          colorText: '#0f172a',
+          colorTextSecondary: '#475569',
+          colorBorderSecondary: '#e2e8f0',
+          colorLink: '#3b5bfd',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
         },
         components: {
           Layout: { siderBg: 'transparent', bodyBg: 'transparent' },
-          Table: { headerBg: '#141824', rowHoverBg: 'rgba(99,102,241,0.06)', borderColor: 'rgba(255,255,255,0.06)' },
-          Card: { colorBgContainer: 'rgba(17,24,39,0.8)', colorBorderSecondary: 'rgba(255,255,255,0.08)' },
-          Anchor: { colorPrimary: '#818cf8', fontSize: 13 },
+          Table: { headerBg: '#f5f7fb', rowHoverBg: '#f8faff', borderColor: '#e6ebf4' },
+          Card: { colorBgContainer: '#ffffff', colorBorderSecondary: '#e6ebf4' },
+          Anchor: { colorPrimary: '#3b5bfd', fontSize: 13 },
           Timeline: { dotBg: 'transparent' },
-          Tag: { defaultBg: 'rgba(99,102,241,0.12)', defaultColor: '#a5b4fc' },
+          Tag: { defaultBg: '#eef3ff', defaultColor: '#3b5bfd' },
         },
       }}
     >
@@ -138,14 +141,14 @@ const App: React.FC = () => {
                   reactionsEnabled="1"
                   emitMetadata="0"
                   inputPosition="top"
-                  theme="dark_dimmed"
+                  theme="light"
                   lang="zh-CN"
                 />
               </div>
             </section>
 
             {/* Footer */}
-            <Divider style={{ borderColor: 'rgba(255,255,255,0.06)', marginTop: 80 }} />
+            <Divider style={{ borderColor: '#e6ebf4', marginTop: 80 }} />
             <footer className="app-footer">
               <Paragraph type="secondary">
                 基于 <Text code>plugin-rsl-bi-indicator-tree</Text> 代码库分析 · 2026-04-10

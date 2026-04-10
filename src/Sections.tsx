@@ -121,13 +121,13 @@ graph TD
   G -->|调用| F
   F -->|取数| E
 
-  style A fill:#1a3a2a,stroke:#10b981
-  style B fill:#1a2540,stroke:#3b82f6
-  style C fill:#1a2540,stroke:#3b82f6
-  style D fill:#2a2010,stroke:#f59e0b
-  style E fill:#1a3a2a,stroke:#10b981
-  style F fill:#1a2540,stroke:#3b82f6
-  style G fill:#2a1a2e,stroke:#ec4899
+  style A fill:#e8f6ef,stroke:#16a34a
+  style B fill:#eaf2ff,stroke:#2563eb
+  style C fill:#eaf2ff,stroke:#2563eb
+  style D fill:#fff4e5,stroke:#d97706
+  style E fill:#e8f6ef,stroke:#16a34a
+  style F fill:#eaf2ff,stroke:#2563eb
+  style G fill:#fdf2ff,stroke:#a21caf
 `
 
 export const ArchitectureSection: React.FC = () => (
@@ -141,7 +141,7 @@ export const ArchitectureSection: React.FC = () => (
     <Row gutter={[16, 16]}>
       <Col xs={24} md={8}>
         <Card title={<span style={{ color: '#10b981' }}>A. 指标中心</span>} extra={<Tag color="green">已有</Tag>}>
-          <ul style={{ paddingLeft: 18, color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
             <li>指标值查询（单值/批量/趋势）</li>
             <li>维度拆解查询</li>
             <li>公式计算</li>
@@ -151,7 +151,7 @@ export const ArchitectureSection: React.FC = () => (
       </Col>
       <Col xs={24} md={8}>
         <Card title={<span style={{ color: '#3b82f6' }}>B. 归因引擎</span>} extra={<Tag color="blue">新增</Tag>}>
-          <ul style={{ paddingLeft: 18, color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
             <li>结构归因 / 维度归因</li>
             <li>变化量分解</li>
             <li>异常根因分析</li>
@@ -162,7 +162,7 @@ export const ArchitectureSection: React.FC = () => (
       </Col>
       <Col xs={24} md={8}>
         <Card title={<span style={{ color: '#ec4899' }}>C. Agent 层</span>} extra={<Tag color="magenta">新增</Tag>}>
-          <ul style={{ paddingLeft: 18, color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
             <li>意图识别</li>
             <li>流程编排</li>
             <li>工具调用</li>
@@ -184,11 +184,11 @@ graph LR
   B --> C["华东地区 贡献 60%"]
   C --> D["安卓端 贡献 45%"]
   D --> E["3/15 突降 置信度 92%"]
-  style A fill:#3a1a1a,stroke:#ef4444
-  style B fill:#3a1a1a,stroke:#ef4444
-  style C fill:#2a2010,stroke:#f59e0b
-  style D fill:#2a2a10,stroke:#eab308
-  style E fill:#1a3a2a,stroke:#10b981
+  style A fill:#fee2e2,stroke:#dc2626
+  style B fill:#fee2e2,stroke:#dc2626
+  style C fill:#fff7ed,stroke:#ea580c
+  style D fill:#fef9c3,stroke:#ca8a04
+  style E fill:#ecfdf3,stroke:#16a34a
 `
 
 export const EngineSection: React.FC = () => (
@@ -271,7 +271,7 @@ export const EngineSection: React.FC = () => (
       <Col xs={24} md={12}>
         <Card title="后端（归因引擎）" className="split-card" headStyle={{ color: '#10b981' }}>
           {['数值计算（差异分解/贡献度）', '维度拆解查询', '异常检测（统计方法）', '排序和过滤', '证据数据组装'].map((s, i) => (
-            <div key={i} style={{ padding: '6px 0', color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+            <div key={i} style={{ padding: '6px 0', color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
               <CheckCircleOutlined style={{ color: '#10b981', marginRight: 10 }} />{s}
             </div>
           ))}
@@ -280,7 +280,7 @@ export const EngineSection: React.FC = () => (
       <Col xs={24} md={12}>
         <Card title="Agent 层（LLM 驱动）" className="split-card" headStyle={{ color: '#a855f7' }}>
           {['意图识别（理解用户问题）', '分析流程编排', '工具选择和调用', '自然语言结果解释', '多轮追问上下文管理'].map((s, i) => (
-            <div key={i} style={{ padding: '6px 0', color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+            <div key={i} style={{ padding: '6px 0', color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
               <CheckCircleOutlined style={{ color: '#a855f7', marginRight: 10 }} />{s}
             </div>
           ))}
@@ -548,7 +548,7 @@ export const PlansSection: React.FC = () => (
             title={<>方案 {p.letter} · {p.title}</>}
             extra={<Tag color={p.tagColor}>{p.tag}</Tag>}
           >
-            <ul style={{ paddingLeft: 18, color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 12 }}>
+            <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginBottom: 12 }}>
               {p.items.map((item, i) => <li key={i} style={{ marginBottom: 4 }}>{item}</li>)}
             </ul>
             <div style={{ fontSize: 13 }}>
@@ -638,7 +638,7 @@ export const MVPSection: React.FC = () => (
             <Text strong style={{ display: 'block', fontSize: 15, marginBottom: 6 }}>{p.title}</Text>
             <Text type="secondary" style={{ display: 'block', fontSize: 13, marginBottom: 10 }}>{p.desc}</Text>
             {p.items.length > 0 && (
-              <ul style={{ paddingLeft: 16, color: 'rgba(255,255,255,0.55)', fontSize: 12, margin: 0 }}>
+              <ul style={{ paddingLeft: 16, color: 'rgba(71,85,105,0.86)', fontSize: 12, margin: 0 }}>
                 {p.items.map((item, j) => <li key={j} style={{ marginBottom: 3 }}>{item}</li>)}
               </ul>
             )}

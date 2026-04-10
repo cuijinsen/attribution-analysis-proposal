@@ -3,14 +3,15 @@ import mermaid from 'mermaid'
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'base',
   themeVariables: {
-    primaryColor: '#2a2d3e',
-    primaryTextColor: '#d4d4e0',
-    primaryBorderColor: '#6366f1',
-    lineColor: '#6366f1',
-    secondaryColor: '#1a1d2e',
-    tertiaryColor: '#111827',
+    primaryColor: '#f8fbff',
+    primaryTextColor: '#0f172a',
+    primaryBorderColor: '#3b5bfd',
+    lineColor: '#3b5bfd',
+    secondaryColor: '#eef4ff',
+    tertiaryColor: '#f5f7fb',
+    background: '#ffffff',
     fontFamily: '-apple-system, "Segoe UI", "PingFang SC", sans-serif',
     fontSize: '14px',
   },
@@ -38,7 +39,7 @@ const MermaidChart: React.FC<Props> = ({ chart }) => {
         }
       } catch {
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = '<p style="color:#ef4444">Mermaid 渲染失败</p>'
+          ref.current.innerHTML = '<p style="color:#dc2626">Mermaid 渲染失败</p>'
         }
       }
     }
