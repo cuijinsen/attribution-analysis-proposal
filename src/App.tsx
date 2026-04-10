@@ -3,7 +3,7 @@ import {
   ConfigProvider, Layout, Anchor, Typography, Space, Tag, Button,
   FloatButton, theme, Divider,
 } from 'antd'
-import { GithubOutlined, ArrowDownOutlined, UserOutlined } from '@ant-design/icons'
+import { ArrowDownOutlined } from '@ant-design/icons'
 import Giscus from '@giscus/react'
 import {
   BackgroundSection, ProductSection, ArchitectureSection,
@@ -14,8 +14,6 @@ import './App.css'
 
 const { Sider, Content } = Layout
 const { Title, Paragraph, Text } = Typography
-
-const REPO_URL = 'https://github.com/cuijinsen/attribution-analysis-proposal'
 
 const anchorItems = [
   { key: 'hero', href: '#hero', title: '概述' },
@@ -78,9 +76,6 @@ const App: React.FC = () => {
             <div className="sider-header">
               <span className="sider-header-label">目录</span>
             </div>
-            <a className="sider-github" href={REPO_URL} target="_blank" rel="noopener noreferrer">
-              <GithubOutlined /> 查看源码仓库
-            </a>
             <Anchor targetOffset={100} items={anchorItems} affix={false} />
           </div>
         </Sider>
@@ -107,10 +102,7 @@ const App: React.FC = () => {
                   <Tag color="purple">LLM Agent</Tag>
                 </Space>
                 <Space size={12} className="hero-links">
-                  <Button type="primary" size="large" icon={<GithubOutlined />} href={REPO_URL} target="_blank">
-                    GitHub 仓库
-                  </Button>
-                  <Button size="large" ghost href="#sec-background" icon={<ArrowDownOutlined />}>
+                  <Button type="primary" size="large" href="#sec-background" icon={<ArrowDownOutlined />}>
                     开始阅读
                   </Button>
                 </Space>
@@ -158,14 +150,9 @@ const App: React.FC = () => {
               <Paragraph type="secondary">
                 基于 <Text code>plugin-rsl-bi-indicator-tree</Text> 代码库分析 · 2026-04-10
               </Paragraph>
-              <Space size={24}>
-                <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-                  <GithubOutlined /> GitHub
-                </a>
-                <a href="https://github.com/cuijinsen" target="_blank" rel="noopener noreferrer">
-                  <UserOutlined /> @cuijinsen
-                </a>
-              </Space>
+              <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                开源仓库超链见第七章技术选型与参考项目。
+              </Paragraph>
             </footer>
           </Content>
         </Layout>
