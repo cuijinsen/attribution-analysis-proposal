@@ -8,6 +8,7 @@ import {
   ThunderboltOutlined, SafetyOutlined, ApiOutlined,
   BranchesOutlined, AimOutlined, FundOutlined,
   RocketOutlined, GithubOutlined, LinkOutlined,
+  BellOutlined, FlagOutlined, SendOutlined,
 } from '@ant-design/icons'
 import MermaidChart from './components/MermaidChart'
 
@@ -685,6 +686,238 @@ export const ConclusionSection: React.FC = () => (
       showIcon
       style={{ marginTop: 28 }}
       message="平台化和 Agent 中心化都是可行的长期方向，当前阶段先在插件内做出 MVP，验证产品价值后再推进架构演进。"
+    />
+  </section>
+)
+
+/* ============================================================
+   十二、预警机制追加评估
+   ============================================================ */
+const alertMechanismFlow = `
+flowchart TD
+  A[规则引擎扫描指标] --> B{达到预警阈值?}
+  B -->|否| Z[继续监控]
+  B -->|是| C[生成预警事件]
+  C --> D[自动触发归因分析]
+  D --> E[生成证据卡片与处置建议]
+  E --> F[按推送策略路由]
+  F --> G[客户与责任人接收]
+  G --> H[回写状态与审计日志]
+
+  style A fill:#eaf2ff,stroke:#2563eb
+  style C fill:#fff7ed,stroke:#ea580c
+  style D fill:#ecfdf3,stroke:#16a34a
+  style E fill:#fdf4ff,stroke:#a21caf
+  style F fill:#e0f2fe,stroke:#0284c7
+  style G fill:#ecfdf3,stroke:#16a34a
+  style H fill:#f8fafc,stroke:#64748b
+`
+
+export const AlertPlanSection: React.FC = () => (
+  <section id="sec-alert-plan" className="section-block">
+    <Title level={2} className="section-title">十二、预警机制追加架构方案评估</Title>
+
+    <Title level={3} className="section-subtitle">12.1 触发与归因闭环</Title>
+    <MermaidChart chart={alertMechanismFlow} />
+
+    <Title level={3} className="section-subtitle">12.2 机制实现要点</Title>
+    <Row gutter={[14, 14]}>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><BellOutlined /> 预警规则配置</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>阈值类型：绝对值/同比/环比/波动率</li>
+            <li>监控粒度：日/周/月与维度切片</li>
+            <li>静默窗口：夜间或节假日降噪</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><ApiOutlined /> 达阈自动归因</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>触发后调用结构归因 + 维度归因</li>
+            <li>输出主因路径、贡献度与置信度</li>
+            <li>自动附带异常时间点证据</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><SendOutlined /> 推送接收配置</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>接收对象：客户/负责人/协同群组</li>
+            <li>渠道：站内、邮件、Webhook、IM</li>
+            <li>支持升级策略与回执追踪</li>
+          </ul>
+        </Card>
+      </Col>
+    </Row>
+
+    <Title level={3} className="section-subtitle">12.3 架构方案评估</Title>
+    <Table
+      pagination={false}
+      size="middle"
+      bordered
+      columns={[
+        { title: '方案', dataIndex: 'name', width: 170 },
+        { title: '实现方式', dataIndex: 'impl' },
+        { title: '优点', dataIndex: 'pros' },
+        { title: '风险', dataIndex: 'risk' },
+        { title: '结论', dataIndex: 'verdict', width: 100, render: (t: string, r: any) => <Tag color={r.color}>{t}</Tag> },
+      ]}
+      dataSource={[
+        {
+          key: 'a',
+          name: 'A. 插件内闭环预警',
+          impl: '规则检测 + 归因触发 + 推送在同一插件',
+          pros: '上线快、链路短、无需额外运维',
+          risk: '中后期跨系统复用能力弱',
+          verdict: 'MVP 推荐',
+          color: 'green',
+        },
+        {
+          key: 'b',
+          name: 'B. 独立预警中心',
+          impl: '事件总线 + 独立服务统一推送',
+          pros: '可复用、跨产品统一治理',
+          risk: '改造重、建设周期长',
+          verdict: '中后期',
+          color: 'orange',
+        },
+        {
+          key: 'c',
+          name: 'C. 混合双层',
+          impl: '插件内快速闭环 + 外部预留标准接口',
+          pros: '兼顾交付速度与演进空间',
+          risk: '接口治理要求较高',
+          verdict: '推荐',
+          color: 'green',
+        },
+      ]}
+    />
+
+    <Alert
+      type="success"
+      showIcon
+      style={{ marginTop: 22 }}
+      message="建议采用 C 方案：达到预警值后自动归因并按客户接收配置推送，先在插件内落地，再向统一预警中心演进。"
+    />
+  </section>
+)
+
+/* ============================================================
+   十三、目标机制追加评估
+   ============================================================ */
+const targetMechanismFlow = `
+flowchart TD
+  A[目标库加载周期目标] --> B[实时值对比目标值]
+  B --> C{偏差超出容忍带?}
+  C -->|否| Z[记录达成率]
+  C -->|是| D[生成目标偏差事件]
+  D --> E[触发归因分析]
+  E --> F[拆解责任维度与主因路径]
+  F --> G[推送到目标负责人/客户]
+  G --> H[跟踪整改与复盘]
+
+  style A fill:#eaf2ff,stroke:#2563eb
+  style B fill:#eef2ff,stroke:#4f46e5
+  style D fill:#fff7ed,stroke:#ea580c
+  style E fill:#ecfdf3,stroke:#16a34a
+  style F fill:#fdf4ff,stroke:#a21caf
+  style G fill:#e0f2fe,stroke:#0284c7
+  style H fill:#f8fafc,stroke:#64748b
+`
+
+export const TargetPlanSection: React.FC = () => (
+  <section id="sec-target-plan" className="section-block">
+    <Title level={2} className="section-title">十三、目标机制追加架构方案评估</Title>
+
+    <Title level={3} className="section-subtitle">13.1 目标偏差自动化闭环</Title>
+    <MermaidChart chart={targetMechanismFlow} />
+
+    <Title level={3} className="section-subtitle">13.2 机制实现要点</Title>
+    <Row gutter={[14, 14]}>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><FlagOutlined /> 目标配置模型</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>目标周期：月/季/年 + 口径版本</li>
+            <li>目标对象：总目标与维度子目标</li>
+            <li>容忍带：绝对偏差与百分比偏差</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><BranchesOutlined /> 偏差归因分析</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>目标偏差触发后自动计算贡献路径</li>
+            <li>识别责任维度（区域/渠道/端）</li>
+            <li>输出可执行纠偏建议</li>
+          </ul>
+        </Card>
+      </Col>
+      <Col xs={24} md={8}>
+        <Card hoverable>
+          <Text strong><SendOutlined /> 责任推送与协同</Text>
+          <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
+            <li>按责任矩阵推送对应负责人</li>
+            <li>抄送客户/管理者并带处置链接</li>
+            <li>支持追踪、升级、关闭流程</li>
+          </ul>
+        </Card>
+      </Col>
+    </Row>
+
+    <Title level={3} className="section-subtitle">13.3 架构方案评估</Title>
+    <Table
+      pagination={false}
+      size="middle"
+      bordered
+      columns={[
+        { title: '方案', dataIndex: 'name', width: 170 },
+        { title: '实现方式', dataIndex: 'impl' },
+        { title: '优点', dataIndex: 'pros' },
+        { title: '风险', dataIndex: 'risk' },
+        { title: '结论', dataIndex: 'verdict', width: 100, render: (t: string, r: any) => <Tag color={r.color}>{t}</Tag> },
+      ]}
+      dataSource={[
+        {
+          key: 'a',
+          name: 'A. 目标看板增强',
+          impl: '在现有拆解树/看板中增加目标偏差闭环',
+          pros: '改造小、用户迁移成本低',
+          risk: '复杂目标场景治理能力有限',
+          verdict: 'MVP 推荐',
+          color: 'green',
+        },
+        {
+          key: 'b',
+          name: 'B. 独立目标管理域',
+          impl: '独立目标服务 + 规则引擎 + 推送中心',
+          pros: '标准化强、适配多业务线',
+          risk: '建设成本高、周期长',
+          verdict: '中后期',
+          color: 'orange',
+        },
+        {
+          key: 'c',
+          name: 'C. 混合渐进',
+          impl: '看板内闭环起步，保留目标域接口',
+          pros: '当前可交付，未来可拆分',
+          risk: '前期需约束接口边界',
+          verdict: '推荐',
+          color: 'green',
+        },
+      ]}
+    />
+
+    <Alert
+      type="success"
+      showIcon
+      style={{ marginTop: 22 }}
+      message="建议采用 C 方案：目标偏差触发后自动归因、自动推送责任人和客户接收对象，实现目标管理闭环。"
     />
   </section>
 )

@@ -1,45 +1,98 @@
 import React, { useState, useEffect } from 'react'
 import {
-  ConfigProvider, Layout, Anchor, Typography, Space, Tag, Button,
+  ConfigProvider, Layout, Menu, Typography, Space, Tag, Button,
   FloatButton, theme, Divider,
 } from 'antd'
 import { ArrowDownOutlined } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
 import Giscus from '@giscus/react'
 import {
   BackgroundSection, ProductSection, ArchitectureSection,
   EngineSection, LLMSection, JDK8Section, TechSelectionSection,
   PlansSection, SummarySection, MVPSection, ConclusionSection,
+  AlertPlanSection, TargetPlanSection,
 } from './Sections'
 import './App.css'
 
 const { Sider, Content } = Layout
 const { Title, Paragraph, Text } = Typography
 
-const anchorItems = [
-  { key: 'hero', href: '#hero', title: '概述' },
-  { key: 'bg', href: '#sec-background', title: '一、背景与现状' },
-  { key: 'prod', href: '#sec-product', title: '二、产品形态' },
-  { key: 'arch', href: '#sec-arch', title: '三、架构拆分' },
-  { key: 'engine', href: '#sec-engine', title: '四、归因引擎' },
-  { key: 'llm', href: '#sec-llm', title: '五、LLM 边界' },
-  { key: 'jdk8', href: '#sec-jdk8', title: '六、JDK8 落地' },
-  { key: 'tech', href: '#sec-tech', title: '七、技术选型' },
-  { key: 'plans', href: '#sec-plans', title: '八、方案对比' },
-  { key: 'summary', href: '#sec-summary', title: '九、总结矩阵' },
-  { key: 'mvp', href: '#sec-mvp', title: '十、MVP 计划' },
-  { key: 'conclusion', href: '#sec-conclusion', title: '十一、结论' },
-  { key: 'comments', href: '#sec-comments', title: '💬 评论' },
+const sectionOrder = [
+  'hero',
+  'sec-background',
+  'sec-product',
+  'sec-arch',
+  'sec-engine',
+  'sec-llm',
+  'sec-jdk8',
+  'sec-tech',
+  'sec-plans',
+  'sec-summary',
+  'sec-mvp',
+  'sec-conclusion',
+  'sec-alert-plan',
+  'sec-target-plan',
+  'sec-comments',
+]
+
+const menuItems: MenuProps['items'] = [
+  {
+    key: 'group-overview',
+    label: '总览',
+    children: [{ key: 'hero', label: <a href="#hero">概述</a> }],
+  },
+  {
+    key: 'group-core',
+    label: '核心方案',
+    children: [
+      { key: 'sec-background', label: <a href="#sec-background">一、背景与现状</a> },
+      { key: 'sec-product', label: <a href="#sec-product">二、产品形态</a> },
+      { key: 'sec-arch', label: <a href="#sec-arch">三、架构拆分</a> },
+      { key: 'sec-engine', label: <a href="#sec-engine">四、归因引擎</a> },
+      { key: 'sec-llm', label: <a href="#sec-llm">五、LLM 边界</a> },
+      { key: 'sec-jdk8', label: <a href="#sec-jdk8">六、JDK8 落地</a> },
+      { key: 'sec-tech', label: <a href="#sec-tech">七、技术选型</a> },
+      { key: 'sec-plans', label: <a href="#sec-plans">八、方案对比</a> },
+      { key: 'sec-summary', label: <a href="#sec-summary">九、总结矩阵</a> },
+      { key: 'sec-mvp', label: <a href="#sec-mvp">十、MVP 计划</a> },
+      { key: 'sec-conclusion', label: <a href="#sec-conclusion">十一、结论</a> },
+    ],
+  },
+  {
+    key: 'group-extended',
+    label: '追加架构评估',
+    children: [
+      { key: 'sec-alert-plan', label: <a href="#sec-alert-plan">十二、预警机制评估</a> },
+      { key: 'sec-target-plan', label: <a href="#sec-target-plan">十三、目标机制评估</a> },
+    ],
+  },
+  {
+    key: 'group-collab',
+    label: '互动',
+    children: [{ key: 'sec-comments', label: <a href="#sec-comments">💬 评论讨论</a> }],
+  },
 ]
 
 const App: React.FC = () => {
   const [progress, setProgress] = useState(0)
+  const [activeSection, setActiveSection] = useState('hero')
 
   useEffect(() => {
     const onScroll = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight
       setProgress(total > 0 ? (window.scrollY / total) * 100 : 0)
+
+      let current = 'hero'
+      for (const id of sectionOrder) {
+        const el = document.getElementById(id)
+        if (el && window.scrollY + 160 >= el.offsetTop) {
+          current = id
+        }
+      }
+      setActiveSection(current)
     }
     window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -79,7 +132,13 @@ const App: React.FC = () => {
             <div className="sider-header">
               <span className="sider-header-label">目录</span>
             </div>
-            <Anchor targetOffset={100} items={anchorItems} affix={false} />
+            <Menu
+              mode="inline"
+              items={menuItems}
+              selectedKeys={[activeSection]}
+              defaultOpenKeys={['group-overview', 'group-core', 'group-extended']}
+              className="sider-menu"
+            />
           </div>
         </Sider>
 
@@ -123,6 +182,8 @@ const App: React.FC = () => {
             <SummarySection />
             <MVPSection />
             <ConclusionSection />
+            <AlertPlanSection />
+            <TargetPlanSection />
 
             {/* Comments */}
             <section id="sec-comments" className="section-block">
