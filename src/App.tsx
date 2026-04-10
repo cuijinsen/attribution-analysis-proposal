@@ -127,7 +127,7 @@ const App: React.FC = () => {
 
       <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
         {/* Sidebar */}
-        <Sider width={260} className="app-sider" breakpoint="lg" collapsedWidth={0} trigger={null}>
+        <Sider width={260} className="app-sider" trigger={null}>
           <div className="sider-inner">
             <div className="sider-header">
               <span className="sider-header-label">目录</span>
