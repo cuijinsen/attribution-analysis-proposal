@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>指标拆解树 — 归因分析能力建设方案</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- System fonts for CJK compatibility -->
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 </head>
@@ -385,12 +383,12 @@ sequenceDiagram
       <table>
         <thead><tr><th>框架</th><th>Stars</th><th>维护方</th><th>核心特点</th><th>判断</th></tr></thead>
         <tbody>
-          <tr><td>Pydantic AI</td><td>16k</td><td>Pydantic 团队</td><td>类型安全、结构化输出验证、依赖注入</td><td class="tag-rec">推荐</td></tr>
-          <tr><td>OpenAI Agents SDK</td><td>21k</td><td>OpenAI</td><td>Handoffs、Guardrails、Session</td><td class="tag-opt">可选</td></tr>
-          <tr><td>Google ADK</td><td>19k</td><td>Google</td><td>多 Agent 编排、内置 UI、A2A 协议</td><td class="tag-opt">可选</td></tr>
-          <tr><td>Agno</td><td>20k</td><td>社区</td><td>API 极简、Playground UI</td><td class="tag-opt">可选</td></tr>
-          <tr><td>CrewAI</td><td>27k</td><td>社区</td><td>角色扮演多 Agent</td><td class="tag-no">不匹配</td></tr>
-          <tr><td>LangChain</td><td>100k</td><td>LangChain</td><td>功能全但过重</td><td class="tag-no">过重</td></tr>
+          <tr><td><a href="https://github.com/pydantic/pydantic-ai" target="_blank" rel="noopener">Pydantic AI</a></td><td>16k</td><td>Pydantic 团队</td><td>类型安全、结构化输出验证、依赖注入</td><td class="tag-rec">推荐</td></tr>
+          <tr><td><a href="https://github.com/openai/openai-agents-python" target="_blank" rel="noopener">OpenAI Agents SDK</a></td><td>21k</td><td>OpenAI</td><td>Handoffs、Guardrails、Session</td><td class="tag-opt">可选</td></tr>
+          <tr><td><a href="https://github.com/google/adk-python" target="_blank" rel="noopener">Google ADK</a></td><td>19k</td><td>Google</td><td>多 Agent 编排、内置 UI、A2A 协议</td><td class="tag-opt">可选</td></tr>
+          <tr><td><a href="https://github.com/agno-agi/agno" target="_blank" rel="noopener">Agno</a></td><td>20k</td><td>社区</td><td>API 极简、Playground UI</td><td class="tag-opt">可选</td></tr>
+          <tr><td><a href="https://github.com/crewAIInc/crewAI" target="_blank" rel="noopener">CrewAI</a></td><td>27k</td><td>社区</td><td>角色扮演多 Agent</td><td class="tag-no">不匹配</td></tr>
+          <tr><td><a href="https://github.com/langchain-ai/langchain" target="_blank" rel="noopener">LangChain</a></td><td>100k</td><td>LangChain</td><td>功能全但过重</td><td class="tag-no">过重</td></tr>
         </tbody>
       </table>
     </div>
@@ -411,10 +409,10 @@ sequenceDiagram
 
     <h3>7.3 参考项目</h3>
     <div class="card-grid cols-3">
-      <div class="card"><strong>LinkedIn Thirdeye</strong><br>Java · 时间序列异常检测 + 根因分析</div>
-      <div class="card"><strong>MS Adtributor 论文</strong><br>多维度归因算法</div>
-      <div class="card"><strong>Apache Commons Math</strong><br>Java · 统计计算 · JDK8 兼容</div>
-      <div class="card"><strong>Tablesaw</strong><br>Java · 轻量数据表 · JDK8 兼容</div>
+      <div class="card"><a href="https://github.com/startreedata/thirdeye" target="_blank" rel="noopener"><strong>LinkedIn Thirdeye</strong></a><br>Java · 时间序列异常检测 + 根因分析</div>
+      <div class="card"><a href="https://www.microsoft.com/en-us/research/publication/adtributor-revenue-debugging-in-advertising-systems/" target="_blank" rel="noopener"><strong>MS Adtributor 论文</strong></a><br>多维度归因算法</div>
+      <div class="card"><a href="https://github.com/apache/commons-math" target="_blank" rel="noopener"><strong>Apache Commons Math</strong></a><br>Java · 统计计算 · JDK8 兼容</div>
+      <div class="card"><a href="https://github.com/jtablesaw/tablesaw" target="_blank" rel="noopener"><strong>Tablesaw</strong></a><br>Java · 轻量数据表 · JDK8 兼容</div>
       <div class="card"><strong>Netflix Lumen</strong><br>指标分析方法论</div>
       <div class="card"><strong>Uber Mastermind</strong><br>Python · 异常检测 + 归因</div>
     </div>
