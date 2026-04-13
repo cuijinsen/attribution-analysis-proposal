@@ -928,10 +928,10 @@ export const TargetPlanSection: React.FC = () => (
    ============================================================ */
 const milestoneFlow = `
 flowchart LR
-  M0["M0 · 4月底\nAgent MVP"]
-  M1["M1 · 5~6月\n增强归因"]
-  M2["M2 · 7~8月\n完整闭环"]
-  M3["M3 · 按需\n平台化"]
+  M0["M0 · 4月底\n过渡Agent MVP"]
+  M1["M1 · 5~6月\n增强+标准化"]
+  M2["M2 · 7~8月\n对接Data Agent"]
+  M3["M3 · 按需\n深度融合"]
 
   M0 --> M1 --> M2 --> M3
 
@@ -956,43 +956,50 @@ flowchart TB
     CS["canvasStore\n画布状态 协作 面板"]
   end
 
-  subgraph NEW["新增 Agent 层"]
-    AG["Agno Agent\nPython FastAPI"]
-    JA["Java Agent Proxy\nHTTP 桥接"]
+  subgraph TOOL["标准化 Tool API 层 (永久资产)"]
+    TL["Tool 接口合约\nHTTP REST + JSON Schema"]
   end
 
-  AG -->|HTTP 调用| AS
-  AG -->|HTTP 调用| LS
-  AG -->|HTTP 调用| AD
-  JA -->|反向代理| AG
-  FE -->|请求| JA
+  subgraph AGENT["Agent 层 (可替换)"]
+    AG["过渡: Agno Agent"]
+    DA["目标: 公司 Data Agent"]
+  end
+
+  AG -.->|"M0~M1 过渡"| TL
+  DA -.->|"M2 接入"| TL
+  TL -->|调用| AS
+  TL -->|调用| LS
+  TL -->|调用| AD
+  FE -->|数据| TL
 
   style JAVA fill:#eaf2ff,stroke:#2563eb
   style FE fill:#ecfdf3,stroke:#16a34a
-  style NEW fill:#fff7ed,stroke:#ea580c
+  style TOOL fill:#fef9c3,stroke:#ca8a04,stroke-width:2px
+  style AGENT fill:#fff7ed,stroke:#ea580c
 `
 
-const agnoArchFlow = `
+const transitionFlow = `
 flowchart LR
-  U["用户 前端对话框"] -->|SSE| JP["Java Plugin\nAgent Proxy"]
-  JP -->|HTTP| AGNO["Agno Agent\nFastAPI :8100"]
-
-  subgraph TOOLS["Agent 工具集 调用 Java 已有 API"]
-    T1["attribution_tool\n调用归因计算"]
-    T2["alert_tool\n查询预警事件"]
-    T3["anomaly_tool\n异常检测"]
-    T4["data_tool\n取指标数据"]
-    T5["breakdown_tool\n维度拆解"]
+  subgraph M0_M1["M0~M1 过渡阶段"]
+    FE1["前端"] -->|SSE| JP1["Java Plugin\nAgent Proxy"]
+    JP1 -->|HTTP| AG1["Agno Agent\nFastAPI :8100"]
+    AG1 --> TL1["Tool API"]
+    TL1 --> API1["Java Services"]
   end
 
-  AGNO --> TOOLS
-  TOOLS -->|HTTP 回调| JP2["Java API\n/indicator/tree/*"]
+  subgraph M2_AFTER["M2 对接 Data Agent"]
+    FE2["前端"] -->|SSE| JP2["Java Plugin\nAgent Proxy"]
+    JP2 -->|标准协议| DA2["公司 Data Agent\n中台"]
+    DA2 --> TL2["Tool API\n(同一套)"]
+    TL2 --> API2["Java Services"]
+  end
 
-  style U fill:#ecfdf3,stroke:#16a34a
-  style JP fill:#eaf2ff,stroke:#2563eb
-  style AGNO fill:#fff7ed,stroke:#ea580c
-  style TOOLS fill:#fdf4ff,stroke:#a21caf
-  style JP2 fill:#eaf2ff,stroke:#2563eb
+  M0_M1 ==>|"Proxy 层切换\n前端零改动\nTool API 不变"| M2_AFTER
+
+  style M0_M1 fill:#ecfdf3,stroke:#16a34a
+  style M2_AFTER fill:#eaf2ff,stroke:#2563eb
+  style AG1 fill:#fff7ed,stroke:#ea580c
+  style DA2 fill:#fdf4ff,stroke:#9333ea
 `
 
 interface MilestoneItem {
@@ -1011,156 +1018,159 @@ interface MilestoneItem {
 
 const milestones: MilestoneItem[] = [
   {
-    milestone: 'M0 · Agent MVP',
-    time: '4月底（~3 周）',
+    milestone: 'M0 \u00b7 \u8fc7\u6e21 Agent MVP',
+    time: '4\u6708\u5e95\uff08~3 \u5468\uff09',
     color: '#16a34a',
     tagColor: 'green',
-    summary: '基于 Agno (Python) 搭建归因 Agent，复用全部已有 Java 服务作为工具，跑通"对话式归因 + 邮件推送"端到端链路。同时在 Java 侧保留 Agent Proxy 为后续纯 Java Agent 验证做准备。',
+    summary: '\u7528 Agno (Python) \u5feb\u901f\u642d\u5efa\u8fc7\u6e21\u6027 Agent\uff0c\u590d\u7528\u5168\u90e8\u5df2\u6709 Java \u670d\u52a1\u4f5c\u4e3a\u5de5\u5177\uff0c\u8dd1\u901a\u201c\u5bf9\u8bdd\u5f0f\u5f52\u56e0 + \u90ae\u4ef6\u63a8\u9001\u201d\u7aef\u5230\u7aef\u94fe\u8def\u3002\u91cd\u70b9\u662f\u5b9a\u4e49\u6e05\u6670\u7684 Tool API \u5408\u7ea6\uff0c\u4f5c\u4e3a\u540e\u7eed\u5bf9\u63a5 Data Agent \u7684\u6c38\u4e45\u8d44\u4ea7\u3002',
     reuse: [
-      { scope: 'AlertDetectionService', detail: '4 种规则检测 + 事件 CRUD + 去重 + 定时扫描 → 预警能力直接复用，零改造' },
-      { scope: 'AlertNotificationService', detail: '邮件 (SMTP) + 站内推送 → 推送通道直接复用，Agent 触发即可' },
-      { scope: 'LlmService', detail: 'OpenAI/Azure/Claude 同步 + SSE → Agent 通过 HTTP 调用获取 LLM 解读' },
-      { scope: 'AnomalyDetectionService', detail: 'Z-Score + 滑动均值 → Agent 异常检测工具直接复用' },
-      { scope: 'attribution.ts', detail: 'BFS 全树贡献度 + 关键路径 → 前端归因结果作为 Agent 输入上下文' },
-      { scope: 'alertEngine.ts', detail: '前端规则评估 → 阈值/目标达成率/衍生指标三种 subject → 零改造' },
-      { scope: '督办/订阅/评论/审计', detail: 'SupervisionService + SubscriptionService + CommentService + AuditLogService → 全部作为 Agent 可调用工具' },
+      { scope: 'AlertDetectionService', detail: '4 \u79cd\u89c4\u5219\u68c0\u6d4b + \u4e8b\u4ef6 CRUD + \u53bb\u91cd + \u5b9a\u65f6\u626b\u63cf \u2192 \u9884\u8b66\u80fd\u529b\u76f4\u63a5\u590d\u7528\uff0c\u96f6\u6539\u9020' },
+      { scope: 'AlertNotificationService', detail: '\u90ae\u4ef6 (SMTP) + \u7ad9\u5185\u63a8\u9001 \u2192 \u63a8\u9001\u901a\u9053\u76f4\u63a5\u590d\u7528\uff0cAgent \u89e6\u53d1\u5373\u53ef' },
+      { scope: 'LlmService', detail: 'OpenAI/Azure/Claude \u540c\u6b65 + SSE \u2192 Agent \u901a\u8fc7 HTTP \u8c03\u7528\u83b7\u53d6 LLM \u89e3\u8bfb' },
+      { scope: 'AnomalyDetectionService', detail: 'Z-Score + \u6ed1\u52a8\u5747\u503c \u2192 Agent \u5f02\u5e38\u68c0\u6d4b\u5de5\u5177\u76f4\u63a5\u590d\u7528' },
+      { scope: 'attribution.ts', detail: 'BFS \u5168\u6811\u8d21\u732e\u5ea6 + \u5173\u952e\u8def\u5f84 \u2192 \u524d\u7aef\u5f52\u56e0\u7ed3\u679c\u4f5c\u4e3a Agent \u8f93\u5165\u4e0a\u4e0b\u6587' },
+      { scope: '\u7763\u529e/\u8ba2\u9605/\u8bc4\u8bba/\u5ba1\u8ba1', detail: '\u5168\u90e8\u4f5c\u4e3a Agent \u53ef\u8c03\u7528\u5de5\u5177' },
     ],
     newBuild: [
-      { scope: 'Agno Agent 服务', detail: 'Python FastAPI 服务 (port 8100)；定义 AttributionAgent，注册 5~7 个工具函数，每个工具通过 HTTP 回调 Java API' },
-      { scope: 'Java Agent Proxy', detail: '新建 AgentProxyController，SSE 转发前端请求到 Agno，透传 session/auth；为后续替换为纯 Java Agent 留接口' },
-      { scope: '归因工具简化', detail: 'attribution_tool: 接收节点 ID → 调用前端传来的归因结果（或调用 Java calc API 重算）→ 返回 Top-N 贡献路径' },
-      { scope: '对话前端组件', detail: '拆解树工具栏增加对话入口，连接 AgentProxy SSE，展示多轮对话 + 引用跳转' },
-      { scope: 'Agent 邮件推送', detail: 'Agent 在归因结论生成后，调用 AlertNotificationService 已有邮件通道发送归因摘要' },
+      { scope: 'Tool API \u5408\u7ea6\u5c42', detail: '\u5b9a\u4e49\u6807\u51c6\u5316\u7684 Tool \u63a5\u53e3\u89c4\u8303\uff08HTTP REST + JSON Schema\uff09\uff0c\u6bcf\u4e2a Tool \u5177\u5907\u72ec\u7acb endpoint\u3001\u5165\u53c2/\u51fa\u53c2 schema\u3001\u9274\u6743\u3002\u8fd9\u5957\u5408\u7ea6\u662f\u6c38\u4e45\u8d44\u4ea7\uff0c\u65e0\u8bba Agent \u5982\u4f55\u66f4\u6362\u90fd\u4e0d\u53d8' },
+      { scope: 'Agno Agent \u670d\u52a1\uff08\u8fc7\u6e21\uff09', detail: 'Python FastAPI \u670d\u52a1 (port 8100)\uff1b\u6ce8\u518c 5~7 \u4e2a Tool\uff0c\u6bcf\u4e2a\u901a\u8fc7 HTTP \u56de\u8c03 Java API\u3002\u8fc7\u6e21\u65b9\u6848\uff0cM2 \u5c06\u88ab Data Agent \u66ff\u4ee3' },
+      { scope: 'Java Agent Proxy', detail: '\u65b0\u5efa AgentProxyController\uff0cSSE \u8f6c\u53d1\u524d\u7aef\u8bf7\u6c42\u5230 Agent\uff0c\u900f\u4f20 session/auth\u3002Proxy \u662f\u6c38\u4e45\u7ec4\u4ef6\uff0c\u540e\u7eed\u5207\u6362\u5230 Data Agent \u65f6\u53ea\u9700\u6539 Proxy \u4e0b\u6e38\u5730\u5740' },
+      { scope: '\u5bf9\u8bdd\u524d\u7aef\u7ec4\u4ef6', detail: '\u62c6\u89e3\u6811\u5de5\u5177\u680f\u589e\u52a0\u5bf9\u8bdd\u5165\u53e3\uff0c\u8fde\u63a5 AgentProxy SSE\uff0c\u5c55\u793a\u591a\u8f6e\u5bf9\u8bdd + \u5f15\u7528\u8df3\u8f6c' },
+      { scope: 'Agent \u90ae\u4ef6\u63a8\u9001', detail: 'Agent \u5728\u5f52\u56e0\u7ed3\u8bba\u751f\u6210\u540e\uff0c\u8c03\u7528 notify_tool \u901a\u8fc7\u5df2\u6709\u90ae\u4ef6\u901a\u9053\u53d1\u9001\u5f52\u56e0\u6458\u8981' },
     ],
     agent: [
-      { scope: 'Agno Agent', detail: 'Python 侧：agno.Agent + agno.Tool 注册 → 工具调用 Java API → LLM 编排 → 流式输出' },
-      { scope: 'Java Proxy', detail: 'AgentProxyController /indicator/tree/agent/chat (SSE)，转发到 http://localhost:8100/v1/runs' },
-      { scope: '工具集 M0', detail: 'attribution_tool（归因）、alert_query_tool（查预警）、anomaly_tool（异常检测）、data_query_tool（取数）、notify_tool（推送邮件）' },
-      { scope: '双栈验证', detail: '同一组测试用例，分别跑 Agno 和 Java SimpleAgent → 对比延迟/准确率/编排质量/运维成本 → M1 确定主力栈' },
+      { scope: 'Agno Agent\uff08\u8fc7\u6e21\uff09', detail: 'Python \u4fa7 agno.Agent + Tool \u6ce8\u518c \u2192 \u5de5\u5177\u8c03\u7528 Java API \u2192 LLM \u7f16\u6392 \u2192 \u6d41\u5f0f\u8f93\u51fa\u3002M2 \u5c06\u88ab\u516c\u53f8 Data Agent \u66ff\u6362' },
+      { scope: 'Agent Proxy', detail: 'AgentProxyController /indicator/tree/agent/chat (SSE)\uff0c\u8f6c\u53d1\u5230 Agno\uff0c\u540e\u7eed\u5207\u6362\u4e3a Data Agent \u65f6\u524d\u7aef\u65e0\u611f' },
+      { scope: '\u5de5\u5177\u96c6 M0', detail: 'attribution_tool\u3001alert_query_tool\u3001anomaly_tool\u3001data_query_tool\u3001notify_tool \u2014\u2014 \u8fd9\u4e9b\u5de5\u5177\u662f\u6c38\u4e45\u8d44\u4ea7\uff0c\u540e\u7eed\u76f4\u63a5\u6ce8\u518c\u5230 Data Agent' },
+      { scope: '\u8bbe\u8ba1\u539f\u5219', detail: 'Agent \u53ef\u66ff\u6362\uff0cTool API \u4e0d\u53ef\u66ff\u6362 \u2014\u2014 \u6240\u6709\u5de5\u5177\u6309 Data Agent \u6807\u51c6\u5408\u7ea6\u8bbe\u8ba1\uff0c\u7830\u4fdd M2 \u5bf9\u63a5\u96f6\u6539\u9020' },
     ],
     push: [
-      { scope: '渠道', detail: '复用已有 EmailCenter.getDispatcher().send()，邮件模板包含归因摘要 + 证据 + 查看链接' },
-      { scope: '触发方式', detail: 'Agent 归因完成后 → 自动调用 notify_tool → 邮件发送（无需用户手动）' },
+      { scope: '\u6e20\u9053', detail: '\u590d\u7528\u5df2\u6709 EmailCenter\uff0c\u90ae\u4ef6\u6a21\u677f\u5305\u542b\u5f52\u56e0\u6458\u8981 + \u8bc1\u636e + \u67e5\u770b\u94fe\u63a5' },
+      { scope: '\u89e6\u53d1\u65b9\u5f0f', detail: 'Agent \u5f52\u56e0\u5b8c\u6210\u540e \u2192 \u81ea\u52a8\u8c03\u7528 notify_tool \u2192 \u90ae\u4ef6\u53d1\u9001' },
     ],
     deliverables: [
-      'Agno Agent 服务 (Python FastAPI + 5 个 Tool)',
-      'Java AgentProxyController (SSE 转发)',
-      'Java SimpleAgent (轻量对比验证)',
-      '前端对话组件 (SSE + 多轮)',
-      '归因 → 邮件推送自动闭环',
-      '双栈 (Agno vs Java) 评估报告',
+      '\u6807\u51c6\u5316 Tool API \u5408\u7ea6\u6587\u6863\uff08JSON Schema + \u63a5\u53e3\u89c4\u8303\uff09',
+      'Agno Agent \u670d\u52a1\uff08\u8fc7\u6e21\uff0cPython FastAPI + 5 \u4e2a Tool\uff09',
+      'Java AgentProxyController (SSE \u8f6c\u53d1\uff0c\u6c38\u4e45\u7ec4\u4ef6)',
+      '\u524d\u7aef\u5bf9\u8bdd\u7ec4\u4ef6 (SSE + \u591a\u8f6e)',
+      '\u5f52\u56e0 \u2192 \u90ae\u4ef6\u63a8\u9001\u81ea\u52a8\u95ed\u73af',
+      'Data Agent \u5bf9\u63a5\u53ef\u884c\u6027\u8bc4\u4f30\u62a5\u544a',
     ],
-    exitCriteria: '对话追问"为什么GMV下降了?" → Agent 调用归因+异常检测 → 输出根因 → 邮件推送到收件人，端到端 < 30s。Java SimpleAgent 完成同场景对比。',
+    exitCriteria: '\u5bf9\u8bdd\u8ffd\u95ee\u201c\u4e3a\u4ec0\u4e48GMV\u4e0b\u964d\u4e86?\u201d \u2192 Agent \u8c03\u7528\u5f52\u56e0+\u5f02\u5e38\u68c0\u6d4b \u2192 \u8f93\u51fa\u6839\u56e0 \u2192 \u90ae\u4ef6\u63a8\u9001\uff0c\u7aef\u5230\u7aef < 30s\u3002Tool API \u5408\u7ea6\u6587\u6863\u5b8c\u6210\u8bc4\u5ba1\u3002',
   },
   {
-    milestone: 'M1 · 增强归因 + 维度分析',
-    time: '5~6 月（4~6 周）',
+    milestone: 'M1 \u00b7 \u589e\u5f3a + \u6807\u51c6\u5316',
+    time: '5~6 \u6708\uff084~6 \u5468\uff09',
     color: '#2563eb',
     tagColor: 'blue',
-    summary: '根据 M0 双栈评估确定主力 Agent 栈；新增维度归因工具 + 多通道推送 + LLM 解读嵌入推送。',
+    summary: '\u589e\u5f3a\u5f52\u56e0\u80fd\u529b\uff08\u7ef4\u5ea6\u5f52\u56e0\u3001\u591a\u671f\u5bf9\u6bd4\uff09\uff0c\u6269\u5c55\u63a8\u9001\u6e20\u9053\uff0c\u5c06 Tool API \u5b8c\u5168\u5bf9\u9f50 Data Agent \u6807\u51c6\u534f\u8bae\uff0c\u4e3a M2 \u65e0\u7f1d\u5207\u6362\u505a\u51c6\u5907\u3002',
     reuse: [
-      { scope: '前端维度拆解', detail: '已有 14 种 FilterConverter + BreakdownService → Agent 维度拆解工具直接调用' },
-      { scope: '订阅服务', detail: 'SubscriptionService (daily/realtime/alert_only) → Agent 按订阅模式定向推送' },
+      { scope: '\u524d\u7aef\u7ef4\u5ea6\u62c6\u89e3', detail: '\u5df2\u6709 14 \u79cd FilterConverter + BreakdownService \u2192 Agent \u7ef4\u5ea6\u62c6\u89e3\u5de5\u5177\u76f4\u63a5\u8c03\u7528' },
+      { scope: '\u8ba2\u9605\u670d\u52a1', detail: 'SubscriptionService (daily/realtime/alert_only) \u2192 Agent \u6309\u8ba2\u9605\u6a21\u5f0f\u5b9a\u5411\u63a8\u9001' },
     ],
     newBuild: [
-      { scope: 'DimensionalAttributor', detail: 'Java 新增：按维度字段拆分变化量，回答"哪个地区导致了下降"' },
-      { scope: 'breakdown_tool', detail: 'Agent 新工具：调用 DimensionalAttributor → 返回维度贡献度排名' },
-      { scope: 'IM Webhook', detail: '企业微信/飞书/钉钉 Webhook 推送适配器' },
-      { scope: 'LLM 摘要嵌入', detail: 'Agent 归因结论 → LLM 生成摘要 → 自动嵌入邮件/IM 卡片' },
+      { scope: 'DimensionalAttributor', detail: 'Java \u65b0\u589e\uff1a\u6309\u7ef4\u5ea6\u5b57\u6bb5\u62c6\u5206\u53d8\u5316\u91cf\uff0c\u56de\u7b54\u201c\u54ea\u4e2a\u5730\u533a\u5bfc\u81f4\u4e86\u4e0b\u964d\u201d' },
+      { scope: 'breakdown_tool', detail: 'Tool API \u65b0\u589e\uff1a\u8c03\u7528 DimensionalAttributor \u2192 \u8fd4\u56de\u7ef4\u5ea6\u8d21\u732e\u5ea6\u6392\u540d' },
+      { scope: 'IM Webhook', detail: '\u4f01\u4e1a\u5fae\u4fe1/\u98de\u4e66/\u9489\u9489 Webhook \u63a8\u9001\u9002\u914d\u5668' },
+      { scope: 'Tool API \u5bf9\u9f50 Data Agent', detail: '\u6309 Data Agent \u6807\u51c6\u534f\u8bae\u6539\u9020 Tool\uff1a\u7edf\u4e00\u63cf\u8ff0\u683c\u5f0f\u3001\u53c2\u6570 schema\u3001\u9274\u6743\u65b9\u5f0f\u3001\u9519\u8bef\u7801\u89c4\u8303\u3001\u5de5\u5177\u6ce8\u518c\u6d41\u7a0b' },
     ],
     agent: [
-      { scope: '主力栈确定', detail: '根据 M0 评估报告决定：沿用 Agno OR 迁移到纯 Java Agent' },
-      { scope: '新工具', detail: '+breakdown_tool（维度归因）、+comparison_tool（同比/环比）、+trend_tool（趋势分析）' },
-      { scope: '记忆', detail: 'Agent 接入会话记忆（Agno SqliteDb 或 Java 侧 session store），支持多轮上下文' },
+      { scope: 'Agno \u7ee7\u7eed\u4f7f\u7528', detail: 'M1 \u4ecd\u7528 Agno \u8fc7\u6e21\uff0c\u65b0\u589e 3 \u4e2a\u5de5\u5177 (breakdown/comparison/trend)' },
+      { scope: '\u8bb0\u5fc6', detail: 'Agent \u63a5\u5165\u4f1a\u8bdd\u8bb0\u5fc6\uff08Agno SqliteDb\uff09\uff0c\u652f\u6301\u591a\u8f6e\u4e0a\u4e0b\u6587' },
+      { scope: 'Data Agent \u9884\u5bf9\u63a5', detail: '\u4e0e Data Agent \u56e2\u961f\u5bf9\u9f50\u63a5\u53e3\u534f\u8bae\uff0c\u5b8c\u6210 Tool \u6ce8\u518c\u6d41\u7a0b\u6d4b\u8bd5\uff0c\u786e\u4fdd M2 \u5207\u6362\u65e0\u963b\u529b' },
     ],
     push: [
-      { scope: '渠道', detail: '邮件 + 站内 + 企业 IM (Webhook)' },
-      { scope: '策略', detail: '静默窗口（夜间/休息日降噪）、聚合推送（同一指标多条预警合并）' },
+      { scope: '\u6e20\u9053', detail: '\u90ae\u4ef6 + \u7ad9\u5185 + \u4f01\u4e1a IM (Webhook)' },
+      { scope: '\u7b56\u7565', detail: '\u9759\u9ed8\u7a97\u53e3\uff08\u591c\u95f4/\u4f11\u606f\u65e5\u964d\u566a\uff09\u3001\u805a\u5408\u63a8\u9001\uff08\u540c\u4e00\u6307\u6807\u591a\u6761\u9884\u8b66\u5408\u5e76\uff09' },
     ],
     deliverables: [
-      'DimensionalAttributor 维度归因模块',
-      'Agent 新工具 3 个 (breakdown/comparison/trend)',
-      'IM Webhook 推送适配器',
-      'Agent 记忆 + 多轮上下文',
-      'LLM 摘要自动嵌入推送消息',
+      'DimensionalAttributor \u7ef4\u5ea6\u5f52\u56e0\u6a21\u5757',
+      'Agent \u65b0\u5de5\u5177 3 \u4e2a (breakdown/comparison/trend)',
+      'IM Webhook \u63a8\u9001\u9002\u914d\u5668',
+      'Tool API \u5b8c\u5168\u5bf9\u9f50 Data Agent \u6807\u51c6',
+      'Data Agent \u63a5\u5165\u6d4b\u8bd5\u62a5\u544a',
     ],
-    exitCriteria: '维度归因准确率 > 80%；推送到达率 > 99%；Agent 3 轮对话内定位维度根因。',
+    exitCriteria: '\u7ef4\u5ea6\u5f52\u56e0\u51c6\u786e\u7387 > 80%\uff1b\u5168\u90e8 Tool API \u901a\u8fc7 Data Agent \u6807\u51c6\u534f\u8bae\u9a8c\u8bc1\uff1b\u63a8\u9001\u5230\u8fbe\u7387 > 99%\u3002',
   },
   {
-    milestone: 'M2 · 完整闭环 + 目标管理',
-    time: '7~8 月（6~8 周）',
+    milestone: 'M2 \u00b7 \u5bf9\u63a5 Data Agent',
+    time: '7~8 \u6708\uff086~8 \u5468\uff09',
     color: '#ea580c',
     tagColor: 'orange',
-    summary: '完整预警/目标闭环：多期归因、分级升级推送、目标偏差自动归因、Agent 知识库增强。',
+    summary: '\u4e0b\u7ebf Agno \u8fc7\u6e21 Agent\uff0c\u5c06\u6307\u6807\u62c6\u89e3\u6811\u7684 Tool API \u6b63\u5f0f\u6ce8\u518c\u5230\u516c\u53f8 Data Agent \u4e2d\u53f0\uff0cAgent Proxy \u5207\u6362\u4e0b\u6e38\u5730\u5740\uff0c\u524d\u7aef\u96f6\u6539\u52a8\u3002\u540c\u65f6\u5229\u7528 Data Agent \u53ef\u89c6\u5316\u7f16\u6392\u80fd\u529b\u6784\u5efa\u66f4\u590d\u6742\u7684\u5206\u6790\u5de5\u4f5c\u6d41\u3002',
     reuse: [
-      { scope: '全部已有', detail: 'M0 + M1 所有服务和 Agent 工具持续复用' },
+      { scope: '\u5168\u90e8 Tool API', detail: 'M0 + M1 \u5efa\u8bbe\u7684\u6240\u6709 Tool API \u76f4\u63a5\u6ce8\u518c\u5230 Data Agent\uff0c\u96f6\u4ee3\u7801\u6539\u52a8' },
+      { scope: 'Agent Proxy', detail: '\u4ec5\u4fee\u6539 Proxy \u4e0b\u6e38\u5730\u5740\uff1a\u4ece localhost:8100 \u5207\u4e3a Data Agent \u4e2d\u53f0\u5730\u5740' },
     ],
     newBuild: [
-      { scope: '多期归因', detail: '同比/环比自动归因 + 日历效应校正' },
-      { scope: '目标管理域', detail: '独立目标配置 + 偏差检测 + 责任矩阵 + 纠偏触发' },
-      { scope: '推送升级', detail: '分级升级：30min 未响应 → 逐级升级 → 群通知' },
-      { scope: '审计看板', detail: '预警/目标/归因全链路审计 + 复盘看板' },
+      { scope: 'Data Agent \u5de5\u5177\u6ce8\u518c', detail: '\u5c06\u5168\u90e8 Tool\uff08\u5f52\u56e0/\u9884\u8b66/\u5f02\u5e38/\u53d6\u6570/\u63a8\u9001/\u7ef4\u5ea6\uff09\u6ce8\u518c\u5230 Data Agent \u5de5\u5177\u4e2d\u5fc3' },
+      { scope: '\u591a\u671f\u5f52\u56e0', detail: '\u540c\u6bd4/\u73af\u6bd4\u81ea\u52a8\u5f52\u56e0 + \u65e5\u5386\u6548\u5e94\u6821\u6b63' },
+      { scope: '\u76ee\u6807\u7ba1\u7406\u57df', detail: '\u72ec\u7acb\u76ee\u6807\u914d\u7f6e + \u504f\u5dee\u68c0\u6d4b + \u8d23\u4efb\u77e9\u9635 + \u7ea0\u504f\u89e6\u53d1' },
+      { scope: 'Data Agent \u5de5\u4f5c\u6d41', detail: '\u5229\u7528 Data Agent \u53ef\u89c6\u5316\u7f16\u6392\u80fd\u529b\uff0c\u6784\u5efa\u201c\u5b9a\u65f6\u5de1\u68c0 \u2192 \u5f02\u5e38\u53d1\u73b0 \u2192 \u5f52\u56e0\u5206\u6790 \u2192 \u63a8\u9001\u62a5\u544a\u201d\u81ea\u52a8\u5316\u5de5\u4f5c\u6d41' },
+      { scope: '\u5ba1\u8ba1\u770b\u677f', detail: '\u9884\u8b66/\u76ee\u6807/\u5f52\u56e0\u5168\u94fe\u8def\u5ba1\u8ba1 + \u590d\u76d8\u770b\u677f' },
     ],
     agent: [
-      { scope: '知识库', detail: 'Agent 接入 RAG：历史归因报告 + 业务知识库 → 提升归因解释准确性' },
-      { scope: '置信度', detail: 'Agent 输出每条归因的置信度分数 + 证据引用' },
-      { scope: '自动化', detail: 'Agent 定时巡检：主动发现异常 → 生成归因报告 → 推送 → 无人值守' },
+      { scope: '\u4e0b\u7ebf Agno', detail: '\u505c\u6b62 Agno FastAPI \u670d\u52a1\uff0c\u79fb\u9664 Python \u4f9d\u8d56\uff0c\u8fd0\u7ef4\u590d\u6742\u5ea6\u964d\u4e3a\u96f6' },
+      { scope: 'Data Agent \u4e3b\u5bfc', detail: '\u6240\u6709 Agent \u6d41\u91cf\u7ecf\u7531\u516c\u53f8 Data Agent \u4e2d\u53f0\uff0c\u4eab\u53d7\u4e2d\u53f0\u7684\u8d1f\u8f7d\u5747\u8861\u3001\u76d1\u63a7\u3001\u591a\u6a21\u578b\u5207\u6362\u7b49\u80fd\u529b' },
+      { scope: '\u7f16\u6392\u589e\u5f3a', detail: '\u5229\u7528 Data Agent \u7684 Workflow/Orchestration \u6784\u5efa\u591a\u6b65\u5206\u6790\u6d41\u7a0b' },
     ],
     push: [
-      { scope: '渠道', detail: '全通道：邮件 + 站内 + IM + 短信 + 自定义 Webhook' },
-      { scope: '策略', detail: '分级升级 + 回执追踪 + 超时自动关闭' },
+      { scope: '\u6e20\u9053', detail: '\u5168\u901a\u9053\uff1a\u90ae\u4ef6 + \u7ad9\u5185 + IM + \u77ed\u4fe1 + \u81ea\u5b9a\u4e49 Webhook' },
+      { scope: '\u7b56\u7565', detail: '\u5206\u7ea7\u5347\u7ea7 + \u56de\u6267\u8ffd\u8e2a + \u8d85\u65f6\u81ea\u52a8\u5173\u95ed' },
     ],
     deliverables: [
-      '多期归因引擎',
-      '目标管理域 (配置/检测/责任矩阵)',
-      '分级推送升级策略',
-      'Agent RAG 知识库',
-      '审计 + 复盘看板',
+      'Data Agent \u5de5\u5177\u6ce8\u518c\u5b8c\u6210\uff08\u5168\u90e8 Tool\uff09',
+      'Agno \u6b63\u5f0f\u4e0b\u7ebf\uff0c\u751f\u4ea7\u73af\u5883\u5207\u6362\u5230 Data Agent',
+      '\u591a\u671f\u5f52\u56e0\u5f15\u64ce',
+      '\u76ee\u6807\u7ba1\u7406\u57df',
+      'Data Agent \u81ea\u52a8\u5316\u5de5\u4f5c\u6d41',
+      '\u5ba1\u8ba1 + \u590d\u76d8\u770b\u677f',
     ],
-    exitCriteria: '预警 → 推送 → 处置闭环率 > 90%；目标偏差检测覆盖率 100%；Agent 巡检周报自动生成。',
+    exitCriteria: 'Agno \u5b8c\u5168\u4e0b\u7ebf\uff0c\u751f\u4ea7\u6d41\u91cf 100% \u7ecf\u7531 Data Agent\uff1b\u524d\u7aef\u96f6\u6539\u52a8\u9a8c\u8bc1\u901a\u8fc7\uff1b\u76ee\u6807\u504f\u5dee\u68c0\u6d4b\u8986\u76d6\u7387 100%\u3002',
   },
   {
-    milestone: 'M3 · 平台化',
-    time: '按需',
+    milestone: 'M3 \u00b7 \u6df1\u5ea6\u878d\u5408',
+    time: '\u6309\u9700',
     color: '#9333ea',
     tagColor: 'purple',
-    summary: '归因引擎 + Agent + 推送中心抽离为平台能力，跨业务线复用。',
+    summary: '\u6df1\u5ea6\u878d\u5408 Data Agent \u751f\u6001\uff1a\u5171\u4eab\u77e5\u8bc6\u5e93\u3001\u8de8\u4e1a\u52a1\u7ebf Agent \u534f\u4f5c\u3001\u5f52\u56e0\u80fd\u529b\u5e73\u53f0\u5316\u8f93\u51fa\u3002',
     reuse: [
-      { scope: '全部', detail: 'M0~M2 所有服务、工具、Agent 作为平台化基础' },
+      { scope: '\u5168\u90e8', detail: 'M0~M2 \u6240\u6709\u670d\u52a1\u3001Tool API\u3001Proxy \u4f5c\u4e3a\u57fa\u7840' },
     ],
     newBuild: [
-      { scope: '归因 SDK', detail: '归因引擎独立为 API 服务，支持任意指标体系接入' },
-      { scope: '统一推送中心', detail: '所有应用共享消息路由 + 渠道 + 模板管理' },
-      { scope: '统一预警中心', detail: '跨产品规则编排 + 事件聚合' },
+      { scope: '\u5f52\u56e0 SDK', detail: '\u5f52\u56e0\u5f15\u64ce\u72ec\u7acb\u4e3a API \u670d\u52a1\uff0c\u652f\u6301\u4efb\u610f\u6307\u6807\u4f53\u7cfb\u63a5\u5165' },
+      { scope: '\u7edf\u4e00\u63a8\u9001\u4e2d\u5fc3', detail: '\u6240\u6709\u5e94\u7528\u5171\u4eab\u6d88\u606f\u8def\u7531 + \u6e20\u9053 + \u6a21\u677f\u7ba1\u7406' },
+      { scope: '\u7edf\u4e00\u9884\u8b66\u4e2d\u5fc3', detail: '\u8de8\u4ea7\u54c1\u89c4\u5219\u7f16\u6392 + \u4e8b\u4ef6\u805a\u5408' },
     ],
     agent: [
-      { scope: 'Agent Hub', detail: '多 Agent 注册中心，按领域分工：归因 Agent / 预警 Agent / 报告 Agent' },
-      { scope: 'Agent Marketplace', detail: '工具集市场化：第三方可注册工具供 Agent 调用' },
+      { scope: 'Data Agent \u77e5\u8bc6\u5e93', detail: '\u63a5\u5165 Data Agent RAG\uff1a\u5386\u53f2\u5f52\u56e0\u62a5\u544a + \u4e1a\u52a1\u77e5\u8bc6 \u2192 \u63d0\u5347\u89e3\u91ca\u51c6\u786e\u6027' },
+      { scope: '\u8de8\u4e1a\u52a1\u7ebf\u534f\u4f5c', detail: '\u901a\u8fc7 Data Agent \u5de5\u5177\u5e02\u573a\uff0c\u5176\u4ed6\u4e1a\u52a1\u7ebf\u53ef\u76f4\u63a5\u8c03\u7528\u5f52\u56e0\u5de5\u5177' },
     ],
     push: [
-      { scope: '平台', detail: '统一推送中心：集中管理所有渠道、模板、配额' },
+      { scope: '\u5e73\u53f0', detail: '\u7edf\u4e00\u63a8\u9001\u4e2d\u5fc3\uff1a\u96c6\u4e2d\u7ba1\u7406\u6240\u6709\u6e20\u9053\u3001\u6a21\u677f\u3001\u914d\u989d' },
     ],
     deliverables: [
-      '归因 Engine SDK / API',
-      '统一预警中心',
-      '统一推送中心',
-      'Agent Hub + Marketplace',
+      '\u5f52\u56e0 Engine SDK / API',
+      '\u7edf\u4e00\u9884\u8b66\u4e2d\u5fc3',
+      '\u7edf\u4e00\u63a8\u9001\u4e2d\u5fc3',
+      'Data Agent \u77e5\u8bc6\u5e93\u63a5\u5165',
+      '\u8de8\u4e1a\u52a1\u7ebf\u5de5\u5177\u5e02\u573a\u5f00\u653e',
     ],
-    exitCriteria: '>= 2 个业务线接入；推送中心日均 > 10k 消息。',
+    exitCriteria: '>= 2 \u4e2a\u4e1a\u52a1\u7ebf\u901a\u8fc7 Data Agent \u8c03\u7528\u5f52\u56e0\u5de5\u5177\uff1b\u63a8\u9001\u4e2d\u5fc3\u65e5\u5747 > 10k \u6d88\u606f\u3002',
   },
 ]
 
 export const MilestoneSection: React.FC = () => (
   <section id="sec-milestone" className="section-block">
-    <Title level={2} className="section-title">十四、里程碑规划与评估</Title>
+    <Title level={2} className="section-title">\u5341\u56db\u3001\u91cc\u7a0b\u7891\u89c4\u5212\u4e0e\u8bc4\u4f30</Title>
 
-    {/* 已有能力盘点 */}
-    <Title level={3} className="section-subtitle">14.1 现有能力盘点（已实现，可直接复用）</Title>
+    {/* \u5df2\u6709\u80fd\u529b\u76d8\u70b9 */}
+    <Title level={3} className="section-subtitle">14.1 \u73b0\u6709\u80fd\u529b\u76d8\u70b9\uff08\u5df2\u5b9e\u73b0\uff0c\u53ef\u76f4\u63a5\u590d\u7528\uff09</Title>
     <Alert
       type="success"
       showIcon
       style={{ marginBottom: 16 }}
-      message="当前插件已有完整的预警检测、邮件推送、LLM 对接、异常检测、协作等服务，Agent 层只需编排调用，无需重写底层能力。"
+      message="\u5f53\u524d\u63d2\u4ef6\u5df2\u6709\u5b8c\u6574\u7684\u9884\u8b66\u68c0\u6d4b\u3001\u90ae\u4ef6\u63a8\u9001\u3001LLM \u5bf9\u63a5\u3001\u5f02\u5e38\u68c0\u6d4b\u3001\u534f\u4f5c\u7b49\u670d\u52a1\u3002\u8fc7\u6e21 Agent \u548c\u672a\u6765 Data Agent \u90fd\u53ea\u9700\u7f16\u6392\u8c03\u7528\uff0c\u65e0\u9700\u91cd\u5199\u5e95\u5c42\u80fd\u529b\u3002"
     />
     <MermaidChart chart={existingCapFlow} />
     <Table
@@ -1169,64 +1179,68 @@ export const MilestoneSection: React.FC = () => (
       bordered
       style={{ marginTop: 16 }}
       columns={[
-        { title: '已有服务', dataIndex: 'service', width: 200 },
-        { title: '能力', dataIndex: 'capability' },
-        { title: 'Agent 复用方式', dataIndex: 'reuseAs' },
+        { title: '\u5df2\u6709\u670d\u52a1', dataIndex: 'service', width: 200 },
+        { title: '\u80fd\u529b', dataIndex: 'capability' },
+        { title: 'Tool API \u8f93\u51fa', dataIndex: 'reuseAs' },
       ]}
       dataSource={[
-        { key: '1', service: 'AlertDetectionService', capability: '4 种规则(阈值/目标偏离/波动/连续异常) + 事件CRUD + 去重 + 1分钟定时扫描', reuseAs: 'alert_query_tool / alert_detect_tool' },
-        { key: '2', service: 'AlertNotificationService', capability: '邮件(SMTP) + 站内推送 + 规则级通知配置 + 接收人管理', reuseAs: 'notify_tool' },
-        { key: '3', service: 'LlmService', capability: 'OpenAI/Azure/Claude 同步+SSE，支持7种 provider', reuseAs: 'Agno Agent 的 LLM backend / LLM 解读工具' },
-        { key: '4', service: 'AnomalyDetectionService', capability: 'Z-Score + 滑动均值 + 自动模式，纯 Java 无依赖', reuseAs: 'anomaly_tool' },
-        { key: '5', service: 'attribution.ts (前端)', capability: 'BFS 全树贡献度 + 关键路径 + 根因定位 + 贡献度等级', reuseAs: 'Agent 输入上下文 / attribution_tool' },
-        { key: '6', service: 'alertEngine.ts (前端)', capability: '3种判断对象(值/达成率/衍生) + 可配规则 + 自动扫描', reuseAs: '前端预警联动' },
-        { key: '7', service: 'ModelDataQueryService', capability: '指标取数 + 筛选 + 维度拆解 + 14种 FilterConverter', reuseAs: 'data_query_tool / breakdown_tool' },
-        { key: '8', service: '协作服务群', capability: '督办 + 订阅(每日/实时/仅预警) + 评论 + 审计日志', reuseAs: 'supervision_tool / comment_tool' },
+        { key: '1', service: 'AlertDetectionService', capability: '4 \u79cd\u89c4\u5219(\u9608\u503c/\u76ee\u6807\u504f\u79bb/\u6ce2\u52a8/\u8fde\u7eed\u5f02\u5e38) + \u4e8b\u4ef6CRUD + \u53bb\u91cd + 1\u5206\u949f\u5b9a\u65f6\u626b\u63cf', reuseAs: 'alert_query_tool / alert_detect_tool' },
+        { key: '2', service: 'AlertNotificationService', capability: '\u90ae\u4ef6(SMTP) + \u7ad9\u5185\u63a8\u9001 + \u89c4\u5219\u7ea7\u901a\u77e5\u914d\u7f6e + \u63a5\u6536\u4eba\u7ba1\u7406', reuseAs: 'notify_tool' },
+        { key: '3', service: 'LlmService', capability: 'OpenAI/Azure/Claude \u540c\u6b65+SSE\uff0c\u652f\u63017\u79cd provider', reuseAs: 'llm_tool' },
+        { key: '4', service: 'AnomalyDetectionService', capability: 'Z-Score + \u6ed1\u52a8\u5747\u503c + \u81ea\u52a8\u6a21\u5f0f\uff0c\u7eaf Java \u65e0\u4f9d\u8d56', reuseAs: 'anomaly_tool' },
+        { key: '5', service: 'attribution.ts (\u524d\u7aef)', capability: 'BFS \u5168\u6811\u8d21\u732e\u5ea6 + \u5173\u952e\u8def\u5f84 + \u6839\u56e0\u5b9a\u4f4d + \u8d21\u732e\u5ea6\u7b49\u7ea7', reuseAs: 'attribution_tool' },
+        { key: '6', service: 'ModelDataQueryService', capability: '\u6307\u6807\u53d6\u6570 + \u7b5b\u9009 + \u7ef4\u5ea6\u62c6\u89e3 + 14\u79cd FilterConverter', reuseAs: 'data_query_tool / breakdown_tool' },
+        { key: '7', service: '\u534f\u4f5c\u670d\u52a1\u7fa4', capability: '\u7763\u529e + \u8ba2\u9605(\u6bcf\u65e5/\u5b9e\u65f6/\u4ec5\u9884\u8b66) + \u8bc4\u8bba + \u5ba1\u8ba1\u65e5\u5fd7', reuseAs: 'supervision_tool / comment_tool' },
       ]}
     />
 
-    {/* Agno 双栈架构 */}
-    <Title level={3} className="section-subtitle">14.2 M0 双栈架构：Agno (Python) + Java Agent Proxy</Title>
-    <MermaidChart chart={agnoArchFlow} />
+    {/* \u8fc7\u6e21\u67b6\u6784 \u2192 Data Agent */}
+    <Title level={3} className="section-subtitle">14.2 \u67b6\u6784\u8bbe\u8ba1\uff1a\u8fc7\u6e21 Agent \u2192 \u516c\u53f8 Data Agent</Title>
+    <Alert
+      type="warning"
+      showIcon
+      style={{ marginBottom: 16 }}
+      message="\u6838\u5fc3\u8bbe\u8ba1\u539f\u5219\uff1aAgent \u53ef\u66ff\u6362\uff0cTool API \u4e0d\u53ef\u66ff\u6362\u3002M0~M1 \u7528 Agno \u8fc7\u6e21\u5feb\u901f\u9a8c\u8bc1\uff0cM2 \u5207\u6362\u5230\u516c\u53f8 Data Agent \u4e2d\u53f0\uff0c\u524d\u7aef\u548c Tool API \u5c42\u96f6\u6539\u52a8\u3002"
+    />
+    <MermaidChart chart={transitionFlow} />
     <Row gutter={[14, 14]} style={{ marginTop: 16 }}>
       <Col xs={24} md={8}>
         <Card hoverable>
-          <Text strong><ExperimentOutlined /> 为什么用 Agno</Text>
+          <Text strong><ExperimentOutlined /> \u4e3a\u4ec0\u4e48\u8fc7\u6e21</Text>
           <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
-            <li>Python 生态 Agent 框架成熟，Agno 20 行即可启动</li>
-            <li>内置 FastAPI 运行时，原生 SSE 流式 + 会话隔离</li>
-            <li>Tool 注册极简：@tool 装饰器 HTTP 调用 Java API</li>
-            <li>内置 SqliteDb 会话存储 + tracing 审计</li>
-            <li>团队协作（Team）和工作流（Workflow）一步到位</li>
+            <li>\u516c\u53f8 Data Agent \u4e2d\u53f0\u5c1a\u5728\u5efa\u8bbe\u4e2d\uff0c\u652f\u6491\u4e0d\u4e86 4 \u6708\u5e95\u4e0a\u7ebf</li>
+            <li>Agno 20 \u884c\u5373\u53ef\u542f\u52a8\uff0c\u51e0\u5929\u5185\u8dd1\u901a\u7aef\u5230\u7aef</li>
+            <li>\u8fc7\u6e21\u671f\u9a8c\u8bc1\u4ea7\u54c1\u4ef7\u503c\uff0c\u4e0d\u7b49 Data Agent \u5c31\u7eea</li>
+            <li>\u6240\u6709\u5de5\u4f5c\u91cf\u96f6\u6d6a\u8d39\uff1aTool API \u662f\u6c38\u4e45\u8d44\u4ea7</li>
           </ul>
         </Card>
       </Col>
       <Col xs={24} md={8}>
         <Card hoverable>
-          <Text strong><SafetyOutlined /> Java Proxy 的价值</Text>
+          <Text strong><SafetyOutlined /> \u4e3a\u4ec0\u4e48\u80fd\u65e0\u7f1d\u5207\u6362</Text>
           <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
-            <li>前端不直连 Python，统一 Java 入口保持架构一致</li>
-            <li>Proxy 层做权限校验 + 请求审计 + 限流</li>
-            <li>后续可平滑替换为纯 Java Agent 而前端无感</li>
-            <li>M0 同时在 Proxy 内实现简单 SimpleAgent 做对比</li>
+            <li>Agent Proxy \u5c42\u89e3\u8026\uff1a\u524d\u7aef\u53ea\u8ba4 Proxy\uff0c\u4e0d\u77e5\u9053\u4e0b\u6e38\u662f Agno \u8fd8\u662f Data Agent</li>
+            <li>Tool API \u5408\u7ea6\u4ece M0 \u5f00\u59cb\u5c31\u6309 Data Agent \u6807\u51c6\u8bbe\u8ba1</li>
+            <li>\u5207\u6362\u65f6\u53ea\u6539 Proxy \u914d\u7f6e\u7684\u4e0b\u6e38\u5730\u5740\uff0c\u4e00\u884c\u914d\u7f6e</li>
+            <li>\u56de\u6eda\u65b9\u6848\uff1a\u5982\u679c Data Agent \u4e0d\u7a33\u5b9a\uff0c\u7acb\u5373\u5207\u56de Agno</li>
           </ul>
         </Card>
       </Col>
       <Col xs={24} md={8}>
         <Card hoverable>
-          <Text strong><ThunderboltOutlined /> 双栈验证策略</Text>
+          <Text strong><ThunderboltOutlined /> \u6c38\u4e45\u8d44\u4ea7 vs \u8fc7\u6e21\u7ec4\u4ef6</Text>
           <ul style={{ paddingLeft: 18, color: 'rgba(51,65,85,0.88)', fontSize: 13, marginTop: 8 }}>
-            <li>同一组测试用例，分别跑 Agno 和 Java SimpleAgent</li>
-            <li>对比维度：响应延迟、工具调用准确率、编排质量、运维成本</li>
-            <li>M0 结束出评估报告，M1 确定主力栈</li>
-            <li>无论哪条路线胜出，Java API 工具集不变</li>
+            <li><Text strong>\u6c38\u4e45\uff1a</Text> Tool API \u5408\u7ea6\u3001Java \u670d\u52a1\u3001Agent Proxy\u3001\u524d\u7aef\u5bf9\u8bdd UI</li>
+            <li><Text strong>\u8fc7\u6e21\uff1a</Text> Agno Agent (M0~M1)\uff0cM2 \u540e\u4e0b\u7ebf</li>
+            <li>\u8fc7\u6e21\u671f\u4ea7\u51fa\u7684 Tool API \u5408\u7ea6\u548c\u6d4b\u8bd5\u7528\u4f8b 100% \u590d\u7528</li>
+            <li>\u5de5\u4f5c\u91cf\u6295\u5165\u6bd4\uff1a\u6c38\u4e45\u8d44\u4ea7 85% / \u8fc7\u6e21\u7ec4\u4ef6 15%</li>
           </ul>
         </Card>
       </Col>
     </Row>
 
-    {/* 整体节奏 */}
-    <Title level={3} className="section-subtitle">14.3 整体节奏</Title>
+    {/* \u6574\u4f53\u8282\u594f */}
+    <Title level={3} className="section-subtitle">14.3 \u6574\u4f53\u8282\u594f</Title>
     <MermaidChart chart={milestoneFlow} />
 
     {milestones.map((m, idx) => (
@@ -1238,73 +1252,73 @@ export const MilestoneSection: React.FC = () => (
 
         <Alert type="info" showIcon icon={<ScheduleOutlined />} style={{ marginBottom: 16 }} message={m.summary} />
 
-        {/* 复用已有服务 */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><CheckCircleOutlined /> 复用已有服务</>}>
+        {/* \u590d\u7528\u5df2\u6709\u670d\u52a1 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><CheckCircleOutlined /> \u590d\u7528\u5df2\u6709\u670d\u52a1</>}>
           <Table
             pagination={false}
             size="small"
             bordered
             columns={[
-              { title: '服务', dataIndex: 'scope', width: 180 },
-              { title: '复用说明', dataIndex: 'detail' },
+              { title: '\u670d\u52a1', dataIndex: 'scope', width: 180 },
+              { title: '\u590d\u7528\u8bf4\u660e', dataIndex: 'detail' },
             ]}
             dataSource={m.reuse.map((a, i) => ({ key: `r${i}`, ...a }))}
           />
         </Card>
 
-        {/* 新建内容 */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><RocketOutlined /> 新建内容</>}>
+        {/* \u65b0\u5efa\u5185\u5bb9 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><RocketOutlined /> \u65b0\u5efa\u5185\u5bb9</>}>
           <Table
             pagination={false}
             size="small"
             bordered
             columns={[
-              { title: '模块', dataIndex: 'scope', width: 180 },
-              { title: '实现说明', dataIndex: 'detail' },
+              { title: '\u6a21\u5757', dataIndex: 'scope', width: 180 },
+              { title: '\u5b9e\u73b0\u8bf4\u660e', dataIndex: 'detail' },
             ]}
             dataSource={m.newBuild.map((a, i) => ({ key: `n${i}`, ...a }))}
           />
         </Card>
 
         {/* Agent */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><ApiOutlined /> Agent 层</>}>
+        <Card size="small" style={{ marginBottom: 12 }} title={<><ApiOutlined /> Agent \u5c42</>}>
           <Table
             pagination={false}
             size="small"
             bordered
             columns={[
-              { title: '能力项', dataIndex: 'scope', width: 180 },
-              { title: '说明', dataIndex: 'detail' },
+              { title: '\u80fd\u529b\u9879', dataIndex: 'scope', width: 180 },
+              { title: '\u8bf4\u660e', dataIndex: 'detail' },
             ]}
             dataSource={m.agent.map((a, i) => ({ key: `ag${i}`, ...a }))}
           />
         </Card>
 
-        {/* 推送 */}
-        <Card size="small" style={{ marginBottom: 12 }} title={<><MailOutlined /> 推送能力</>}>
+        {/* \u63a8\u9001 */}
+        <Card size="small" style={{ marginBottom: 12 }} title={<><MailOutlined /> \u63a8\u9001\u80fd\u529b</>}>
           <Table
             pagination={false}
             size="small"
             bordered
             columns={[
-              { title: '能力项', dataIndex: 'scope', width: 120 },
-              { title: '说明', dataIndex: 'detail' },
+              { title: '\u80fd\u529b\u9879', dataIndex: 'scope', width: 120 },
+              { title: '\u8bf4\u660e', dataIndex: 'detail' },
             ]}
             dataSource={m.push.map((a, i) => ({ key: `p${i}`, ...a }))}
           />
         </Card>
 
-        {/* 交付物 & 退出标准 */}
+        {/* \u4ea4\u4ed8\u7269 & \u9000\u51fa\u6807\u51c6 */}
         <Row gutter={[12, 12]}>
           <Col xs={24} md={14}>
-            <Card size="small" title={<><RocketOutlined /> 交付物</>} style={{ height: '100%' }}>
+            <Card size="small" title={<><RocketOutlined /> \u4ea4\u4ed8\u7269</>} style={{ height: '100%' }}>
               <ul style={{ paddingLeft: 18, margin: 0, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>
                 {m.deliverables.map((d, i) => <li key={i} style={{ marginBottom: 4 }}>{d}</li>)}
               </ul>
             </Card>
           </Col>
           <Col xs={24} md={10}>
-            <Card size="small" title={<><TrophyOutlined /> 退出标准</>} style={{ height: '100%' }}>
+            <Card size="small" title={<><TrophyOutlined /> \u9000\u51fa\u6807\u51c6</>} style={{ height: '100%' }}>
               <Paragraph style={{ margin: 0, color: 'rgba(51,65,85,0.88)', fontSize: 13 }}>{m.exitCriteria}</Paragraph>
             </Card>
           </Col>
@@ -1312,33 +1326,32 @@ export const MilestoneSection: React.FC = () => (
       </div>
     ))}
 
-    {/* M0 简化策略 */}
-    <Title level={3} className="section-subtitle">14.8 M0 归因引擎简化说明</Title>
+    {/* \u8fc7\u6e21\u7b56\u7565\u6982\u89c8 */}
+    <Title level={3} className="section-subtitle">14.8 \u8fc7\u6e21\u7b56\u7565\u4e0e\u5de5\u4f5c\u91cf\u5206\u6790</Title>
     <Alert
       type="info"
       showIcon
       style={{ marginBottom: 16 }}
-      message="M0 不是从零造归因引擎，而是让 Agent 编排已有服务。归因能力本身已经在插件中运行，Agent 的价值是让用户用自然语言驱动这些能力。"
+      message="\u8fc7\u6e21 Agent \u4e0d\u662f\u6d6a\u8d39\uff0c\u800c\u662f\u6295\u8d44\u3002M0~M1 \u7684\u6838\u5fc3\u4ea7\u51fa\u662f\u6807\u51c6\u5316\u7684 Tool API \u5408\u7ea6\u548c\u7ecf\u8fc7\u9a8c\u8bc1\u7684\u5de5\u5177\u96c6\uff0c\u8fd9\u4e9b\u5728\u5bf9\u63a5 Data Agent \u65f6 100% \u590d\u7528\u3002\u8fc7\u6e21\u7ec4\u4ef6\uff08Agno\uff09\u4ec5\u5360\u603b\u5de5\u4f5c\u91cf\u7684 ~15%\u3002"
     />
     <Table
       pagination={false}
       size="middle"
       bordered
       columns={[
-        { title: '维度', dataIndex: 'dimension', width: 140 },
-        { title: 'M0 范围', dataIndex: 'mvpDo' },
-        { title: '简化依据', dataIndex: 'reason' },
-        { title: '何时补齐', dataIndex: 'when', width: 80 },
+        { title: '\u7ef4\u5ea6', dataIndex: 'dimension', width: 160 },
+        { title: '\u8fc7\u6e21\u671f (M0~M1)', dataIndex: 'transition' },
+        { title: 'Data Agent \u671f (M2+)', dataIndex: 'dataAgent' },
+        { title: '\u590d\u7528\u7387', dataIndex: 'reuse', width: 80 },
       ]}
       dataSource={[
-        { key: '1', dimension: '归因算法', mvpDo: '复用现有 BFS 贡献度 + 关键路径，Agent 包装为 attribution_tool', reason: '已有 attribution.ts 全套实现，无需新写算法', when: '\u2014' },
-        { key: '2', dimension: '维度归因', mvpDo: 'M0 不做；Agent 仅展示拆解树关键路径', reason: '需新增 DimensionalAttributor，工作量偏大', when: 'M1' },
-        { key: '3', dimension: '异常检测', mvpDo: '复用 AnomalyDetectionService (Z-Score + 滑动均值)', reason: '已有 3 种算法（含自动模式），零改造', when: '\u2014' },
-        { key: '4', dimension: '预警检测', mvpDo: '复用 AlertDetectionService 全部 4 种规则', reason: '阈值/目标偏离/波动/连续异常全部已实现', when: '\u2014' },
-        { key: '5', dimension: '推送', mvpDo: '复用 AlertNotificationService 邮件通道', reason: '已有 SMTP + 规则级接收人配置', when: 'M1 加 IM' },
-        { key: '6', dimension: 'LLM 解读', mvpDo: '复用 LlmService，Agent 在归因后自动调 LLM 生成摘要', reason: '已有同步 + SSE，支持 7 种 provider', when: '\u2014' },
-        { key: '7', dimension: 'Agent 编排', mvpDo: 'Agno Agent + 5 个 Tool；Java SimpleAgent 对比验证', reason: 'Agno 20 行搭建，Tool 是 HTTP 调用已有 API', when: 'M1 定栈' },
-        { key: '8', dimension: '对话 UI', mvpDo: '拆解树工具栏增加对话入口，SSE 流式展示', reason: '复用已有 requestSSE 基础设施', when: 'M1 增强' },
+        { key: '1', dimension: 'Tool API \u5408\u7ea6', transition: '\u5b9a\u4e49\u6807\u51c6\u5316\u63a5\u53e3\uff08JSON Schema + REST\uff09', dataAgent: '\u76f4\u63a5\u6ce8\u518c\u5230 Data Agent \u5de5\u5177\u4e2d\u5fc3', reuse: '100%' },
+        { key: '2', dimension: 'Java \u670d\u52a1\u5c42', transition: '\u5df2\u6709 8+ \u670d\u52a1\uff0c\u5c01\u88c5\u4e3a Tool endpoint', dataAgent: '\u540c\u4e00\u5957 endpoint\uff0c\u96f6\u6539\u52a8', reuse: '100%' },
+        { key: '3', dimension: 'Agent Proxy', transition: '\u8f6c\u53d1\u5230 Agno (localhost:8100)', dataAgent: '\u5207\u6362\u4e0b\u6e38\u5730\u5740\u5230 Data Agent', reuse: '95%' },
+        { key: '4', dimension: '\u524d\u7aef\u5bf9\u8bdd UI', transition: 'SSE \u5bf9\u63a5 Proxy\uff0c\u591a\u8f6e\u5bf9\u8bdd + \u5f15\u7528\u8df3\u8f6c', dataAgent: '\u96f6\u6539\u52a8\uff0cProxy \u62bd\u8c61\u4e86 Agent \u5dee\u5f02', reuse: '100%' },
+        { key: '5', dimension: '\u6d4b\u8bd5\u7528\u4f8b', transition: '\u7aef\u5230\u7aef\u6d4b\u8bd5 + \u5de5\u5177\u51c6\u786e\u7387\u9a8c\u8bc1', dataAgent: '\u540c\u4e00\u5957\u6d4b\u8bd5\u7528\u4f8b\u9a8c\u8bc1 Data Agent \u96c6\u6210', reuse: '100%' },
+        { key: '6', dimension: 'Agno Agent\uff08\u8fc7\u6e21\uff09', transition: 'Python FastAPI + Tool \u6ce8\u518c + \u4f1a\u8bdd\u5b58\u50a8', dataAgent: '\u4e0b\u7ebf\u5e9f\u5f03\uff0c\u7531 Data Agent \u66ff\u4ee3', reuse: '0%' },
+        { key: '7', dimension: '\u603b\u5de5\u4f5c\u91cf\u5360\u6bd4', transition: '\u6c38\u4e45\u8d44\u4ea7 ~85% / \u8fc7\u6e21\u4ee3\u7801 ~15%', dataAgent: '\u8fc7\u6e21\u4ee3\u7801\u5b8c\u5168\u79fb\u9664\uff0c\u65e0\u6280\u672f\u8d1f\u503a', reuse: '\u2014' },
       ]}
     />
 
@@ -1346,7 +1359,7 @@ export const MilestoneSection: React.FC = () => (
       type="warning"
       showIcon
       style={{ marginTop: 22 }}
-      message="M0 核心原则：Agent 从第一天就上线，不做技术储备。已有服务是 Agent 的手脚，Agent 只需学会什么时候用哪只手。4月底交付，端到端验证用自然语言驱动归因分析 + 邮件推送的产品价值。"
+      message="M0 \u6838\u5fc3\u539f\u5219\uff1aAgent \u4ece\u7b2c\u4e00\u5929\u5c31\u4e0a\u7ebf\uff0c\u7528 Agno \u8fc7\u6e21\u5feb\u901f\u9a8c\u8bc1\u4ea7\u54c1\u4ef7\u503c\u3002\u6240\u6709\u5de5\u4f5c\u91cf\u6295\u5165\u5728\u6807\u51c6\u5316 Tool API \u4e0a\uff0cM2 \u65e0\u7f1d\u5207\u6362\u5230\u516c\u53f8 Data Agent \u4e2d\u53f0\u3002\u8fc7\u6e21\u4e0d\u662f\u6d6a\u8d39\uff0c\u662f\u62a2\u8dd1\u3002"
     />
   </section>
 )
