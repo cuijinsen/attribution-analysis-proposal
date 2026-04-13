@@ -12,6 +12,7 @@ import {
   PlansSection, SummarySection, MVPSection, ConclusionSection,
   AlertPlanSection, TargetPlanSection, MilestoneSection,
 } from './Sections'
+import { SelectionCommentWidget } from './SelectionComment'
 import './App.css'
 
 const { Sider, Content } = Layout
@@ -43,15 +44,27 @@ const menuItems: MenuProps['items'] = [
     children: [{ key: 'hero', label: <a href="#hero">概述</a> }],
   },
   {
-    key: 'group-core',
-    label: '核心方案',
+    key: 'group-bg',
+    label: '背景与产品',
     children: [
       { key: 'sec-background', label: <a href="#sec-background">一、背景与现状</a> },
       { key: 'sec-product', label: <a href="#sec-product">二、产品形态</a> },
+    ],
+  },
+  {
+    key: 'group-arch',
+    label: '技术架构',
+    children: [
       { key: 'sec-arch', label: <a href="#sec-arch">三、架构拆分</a> },
       { key: 'sec-engine', label: <a href="#sec-engine">四、归因引擎</a> },
       { key: 'sec-llm', label: <a href="#sec-llm">五、LLM 边界</a> },
       { key: 'sec-jdk8', label: <a href="#sec-jdk8">六、JDK8 落地</a> },
+    ],
+  },
+  {
+    key: 'group-decision',
+    label: '选型与决策',
+    children: [
       { key: 'sec-tech', label: <a href="#sec-tech">七、技术选型</a> },
       { key: 'sec-plans', label: <a href="#sec-plans">八、方案对比</a> },
       { key: 'sec-summary', label: <a href="#sec-summary">九、总结矩阵</a> },
@@ -61,10 +74,10 @@ const menuItems: MenuProps['items'] = [
   },
   {
     key: 'group-extended',
-    label: '追加架构评估',
+    label: '扩展评估',
     children: [
-      { key: 'sec-alert-plan', label: <a href="#sec-alert-plan">十二、预警机制评估</a> },
-      { key: 'sec-target-plan', label: <a href="#sec-target-plan">十三、目标机制评估</a> },
+      { key: 'sec-alert-plan', label: <a href="#sec-alert-plan">十二、预警机制</a> },
+      { key: 'sec-target-plan', label: <a href="#sec-target-plan">十三、目标机制</a> },
       { key: 'sec-milestone', label: <a href="#sec-milestone">十四、里程碑规划</a> },
     ],
   },
@@ -138,7 +151,7 @@ const App: React.FC = () => {
               mode="inline"
               items={menuItems}
               selectedKeys={[activeSection]}
-              defaultOpenKeys={['group-overview', 'group-core', 'group-extended']}
+              defaultOpenKeys={['group-overview', 'group-bg', 'group-arch', 'group-decision', 'group-extended', 'group-collab']}
               className="sider-menu"
             />
           </div>
@@ -187,6 +200,9 @@ const App: React.FC = () => {
             <AlertPlanSection />
             <TargetPlanSection />
             <MilestoneSection />
+
+            {/* Selection comments widget */}
+            <SelectionCommentWidget />
 
             {/* Comments */}
             <section id="sec-comments" className="section-block">
